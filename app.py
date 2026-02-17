@@ -86,32 +86,41 @@ if "codigo" not in st.session_state: st.session_state.codigo = None
 for m in st.session_state.messages:
     with st.chat_message(m["role"]): st.markdown(m["content"])
 
-if prompt := st.chat_input("Escribe tu análisis..."):
+if prompt := st.chat_input("Escribe tu análisis aquí..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"): st.markdown(prompt)
+    with st.chat_message("user"): 
+        st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # Línea 94 corregida con la dirección exacta del modelo
-        model = genai.GenerativeModel('models/gemini-1.5-flash', system_instruction=PROMPT)
-        
-        # Línea 95 corregida: traducimos los roles para que Google los entienda
-        historial = [{"role": "model" if m["role"] == "assistant" else "user", "parts": [m["content"]]} for m in st.session_state.messages]
-        
         try:
-            res = model.generate_content(historial).text
+            # Volvemos al nombre estándar que es más compatible
+            model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=PROMPT)
             
+            # Traducimos el historial para que Google lo entienda (user/model)
+            historial = []
+            for m in st.session_state.messages:
+                role = "model" if m["role"] == "assistant" else "user"
+                historial.append({"role": role, "parts": [m["content"]]})
+            
+            # Intentamos generar la respuesta
+            response = model.generate_content(historial)
+            res = response.text
+            
+            # Lógica del código de validación
             if "completado" in res.lower() and not st.session_state.codigo:
                 st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
-                res += f"\n\n ✅ **VALIDADO. Código:** {st.session_state.codigo}"
+                res += f"\n\n ✅ **VALIDADO. Código de verificación:** {st.session_state.codigo}"
             
             st.markdown(res)
             st.session_state.messages.append({"role": "assistant", "content": res})
+            
         except Exception as e:
-            st.error(f"Error de conexión: {e}")
-        st.session_state.messages.append({"role": "assistant", "content": res})
+            st.error(f"Error de conexión con la IA: {e}")
+            st.info("Aviso: Si el error persiste, verifica tu API Key en los 'Secrets' de Streamlit.")
 
+# El botón de descarga debe estar fuera del bloque de chat
 if st.session_state.codigo:
-    rep = f"Reporte: {c_sel} - {a_sel} - {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
-    for m in st.session_state.messages: rep += f"{m['role'].upper()}: {m['content']}\n\n"
+    rep = f"Reporte de Lectura: {c_sel} - {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
+    for m in st.session_state.messages:
+        rep += f"{m['role'].upper()}: {m['content']}\n\n"
     st.download_button("📥 Descargar Evidencia", rep, file_name=f"Analisis_{s_sel}.txt")
-
