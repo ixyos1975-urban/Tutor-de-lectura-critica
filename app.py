@@ -64,10 +64,10 @@ ESTRUCTURA DE COMPORTAMIENTO:
 2. FASE DESARROLLO: Tu método es el cuestionamiento profundo. NO des respuestas directas. Haz preguntas que desafíen los argumentos del alumno basándote estrictamente en el texto.
 3. ANTI-PLAGIO: Si la respuesta es genérica o parece de IA, exige opinión propia y citas del PDF.
 
-INSTRUCCIÓN ESPECIAL DE TIEMPO:
-A veces recibirás una nota del sistema diciendo "[SISTEMA: El alumno tardó X minutos]".
-- Si el alumno tardó entre 5 y 10 minutos: Tu respuesta DEBE empezar con una advertencia amable pero firme sobre el tiempo. Ejemplo: "Te tomaste un tiempo considerable. Recuerda que el límite es de 10 minutos por intervención. Sobre tu punto..."
-- Si el alumno responde cosas vagas tras una demora: Sé severo. Dile: "Esa respuesta no aporta al análisis y el tiempo sigue corriendo. Necesito argumentos sobre el texto ahora mismo o la sesión se cerrará."
+INSTRUCCIÓN SOBRE TIEMPOS DE RESPUESTA:
+A veces recibirás una nota del sistema diciendo "[SISTEMA: Inactividad detectada de X minutos]".
+- Si el alumno tardó entre 5 y 10 minutos en responder: Tu respuesta DEBE empezar con una advertencia pedagógica. Ejemplo: "Noté una pausa larga antes de tu respuesta. Recuerda apoyarte en tus apuntes y no en fuentes externas. Sobre tu punto..."
+- Si el alumno responde cosas vagas tras una demora larga: Sé estricto.
 
 SOLO escribe 'COMPLETADO' si hay análisis profundo y citas correctas.
 """
@@ -81,6 +81,7 @@ if "messages" not in st.session_state:
 if "codigo" not in st.session_state:
     st.session_state.codigo = None
 
+# Inicializamos el reloj con el tiempo actual
 if "ultima_interaccion" not in st.session_state:
     st.session_state.ultima_interaccion = time.time()
 
@@ -89,27 +90,30 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# 7. CHAT CON LÓGICA DE TIEMPO
+# 7. CHAT CON LÓGICA DE INACTIVIDAD
 if prompt := st.chat_input("Escribe tu análisis aquí..."):
     
-    # --- PASO A: VERIFICACIÓN DEL RELOJ ---
+    # --- PASO A: CÁLCULO DE LA PAUSA (INACTIVIDAD) ---
     tiempo_actual = time.time()
+    # Calculamos cuánto tiempo pasó DESDE el último mensaje hasta AHORA
     tiempo_transcurrido = tiempo_actual - st.session_state.ultima_interaccion
     minutos_transcurridos = int(tiempo_transcurrido / 60)
     
-    # CASO 1: PENALIZACIÓN MÁXIMA (> 10 minutos)
+    # CASO 1: BLOQUEO POR ABANDONO (> 10 minutos de silencio)
     if tiempo_transcurrido > 600:
         st.error(f"⏱️ **SESIÓN CERRADA POR INACTIVIDAD**")
-        st.warning(f"Han pasado {minutos_transcurridos} minutos desde tu última respuesta. El límite es de 10 minutos. Debes reiniciar.")
+        st.warning(f"Detectamos una pausa de {minutos_transcurridos} minutos sin interacción. Por seguridad académica, la sesión ha caducado. Debes reiniciar.")
         st.session_state.messages = []
         st.session_state.codigo = None
+        # Reiniciamos el reloj para que, si reinicia, empiece de cero
         st.session_state.ultima_interaccion = time.time()
         if st.button("Empezar de nuevo"):
             st.rerun()
-        st.stop()
+        st.stop() # Detiene todo. No deja pasar al Tutor.
 
-    # CASO 2: MENSAJE VÁLIDO
+    # CASO 2: INTERACCIÓN VÁLIDA
     else:
+        # ¡IMPORTANTE! Aquí reiniciamos el reloj a CERO porque el alumno ya respondió.
         st.session_state.ultima_interaccion = time.time()
         
         if len(prompt) > 800:
@@ -126,8 +130,10 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
                 
+                # Alerta amarilla (Entre 5 y 10 minutos de silencio)
                 if tiempo_transcurrido > 300:
-                    mensaje_sistema = f"""[SISTEMA: El alumno tardó {minutos_transcurridos} minutos. ADVIÉRTELE sobre el límite de 10 minutos.]"""
+                    mensaje_sistema = f"""[SISTEMA: El alumno hizo una pausa de {minutos_transcurridos} minutos antes de responder esto. 
+                    ADVIÉRTELE amablemente que evite largas pausas para no recurrir a herramientas externas.]"""
                     historial_envio.append({"role": "user", "parts": [mensaje_sistema]})
 
                 model = genai.GenerativeModel(
@@ -148,16 +154,14 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# 8. DESCARGA (Modificado para usar el Código como Nombre de Archivo)
+# 8. DESCARGA
 if st.session_state.codigo:
-    # Limpiamos los corchetes para el nombre del archivo (Ej: [AC-1234] -> AC-1234)
     nombre_archivo = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
     
-    reporte = f"REPORTE DE EVIDENCIA - TUTOR DE ANÁLISIS CRÍTICO\n"
+    reporte = f"REPORTE DE EVIDENCIA\n"
     reporte += f"Sesión: {s_sel}\n"
-    reporte += f"Código de Validación: {st.session_state.codigo}\n\n"
-    reporte += "HISTORIAL DE INTERACCIÓN:\n"
-    reporte += "-" * 30 + "\n"
+    reporte += f"Código: {st.session_state.codigo}\n\n"
+    reporte += "HISTORIAL:\n"
     for m in st.session_state.messages:
         reporte += f"{m['role'].upper()}: {m['content']}\n\n"
         
