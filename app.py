@@ -91,16 +91,27 @@ if prompt := st.chat_input("Escribe tu análisis..."):
     with st.chat_message("user"): st.markdown(prompt)
 
     with st.chat_message("assistant"):
+        # Línea 94 corregida con la dirección exacta del modelo
         model = genai.GenerativeModel('models/gemini-1.5-flash', system_instruction=PROMPT)
+        
+        # Línea 95 corregida: traducimos los roles para que Google los entienda
         historial = [{"role": "model" if m["role"] == "assistant" else "user", "parts": [m["content"]]} for m in st.session_state.messages]
-res = model.generate_content(historial).text
-        if "completado" in res.lower() and not st.session_state.codigo:
-            st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
-            res += f"\n\n✅ **VALIDADO. Código:** {st.session_state.codigo}"
-        st.markdown(res)
+        
+        try:
+            res = model.generate_content(historial).text
+            
+            if "completado" in res.lower() and not st.session_state.codigo:
+                st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
+                res += f"\n\n ✅ **VALIDADO. Código:** {st.session_state.codigo}"
+            
+            st.markdown(res)
+            st.session_state.messages.append({"role": "assistant", "content": res})
+        except Exception as e:
+            st.error(f"Error de conexión: {e}")
         st.session_state.messages.append({"role": "assistant", "content": res})
 
 if st.session_state.codigo:
     rep = f"Reporte: {c_sel} - {a_sel} - {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
     for m in st.session_state.messages: rep += f"{m['role'].upper()}: {m['content']}\n\n"
     st.download_button("📥 Descargar Evidencia", rep, file_name=f"Analisis_{s_sel}.txt")
+
