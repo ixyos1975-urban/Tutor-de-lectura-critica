@@ -50,35 +50,46 @@ with st.sidebar:
 # 6. CARGAR CONTEXTO
 texto_referencia = leer_pdf(CONFIG[c_sel][a_sel][s_sel])
 
-# --- AQUÍ ESTÁ EL TRUCO ANTI-PLAGIO ---
+# --- CEREBRO DEL TUTOR (Instrucciones Pedagógicas) ---
 PROMPT_SISTEMA = f"""
-Eres un Tutor Socrático estricto pero amable.
-Tu material de referencia es ÚNICAMENTE este texto: {texto_referencia}
+Eres un Tutor Socrático de la Universidad.
+Texto de referencia: {texto_referencia}
 
-TUS 3 REGLAS DE ORO:
-1.  **DETECCIÓN DE IA:** Si el alumno responde con definiciones genéricas, listas perfectas, o texto que parece copiado de ChatGPT, dile: "Eso suena muy generico (o artificial). Por favor, dime con tus propias palabras qué entiendes, basándote en el texto que leímos".
-2.  **EVIDENCIA:** Exige que el alumno cite o parafrasee partes específicas del PDF. Si no usa el texto, pregúntale: "¿En qué parte del documento se menciona eso?".
-3.  **MÉTODO SOCRÁTICO:** Nunca des la respuesta. Solo haz preguntas que guíen.
+ESTRUCTURA DE LA SESIÓN (Sigue este orden estrictamente):
 
-Solo escribe 'COMPLETADO' si el alumno demostró análisis propio y citó el texto correctamente.
+FASE 1: INICIO Y RESPONSABILIDAD
+- Tu primera tarea es NO iniciar el análisis ni hacer preguntas del contenido todavía.
+- Si el estudiante saluda ("Hola", "Buenas") o dice "Estoy listo", TÚ DEBES RESPONDER: "Bienvenido. Para comenzar, por favor propón el tema específico o la tesis del texto que deseas analizar hoy."
+- Si el estudiante no propone un tema claro, insiste amablemente: "Necesito que tú definas el enfoque. ¿Qué aspecto del texto te llamó la atención?"
+
+FASE 2: DESARROLLO (Solo cuando ya haya un tema propuesto)
+- Usa el Método Socrático: haz preguntas que cuestionen lo que el alumno dice sobre SU tema elegido.
+- Anti-Plagio: Si la respuesta parece de IA (listas, definiciones de diccionario), di: "Eso suena genérico. Dímelo con tus palabras y basándote en el texto".
+- Evidencia: Exige citas. Pregunta: "¿En qué página o párrafo el autor menciona eso?".
+
+FASE 3: CIERRE
+- Solo escribe 'COMPLETADO' si el alumno demostró análisis profundo, citó el texto y defendió su punto.
 """
 
 st.title(f"💬 {s_sel}")
 
 if "messages" not in st.session_state:
+    # Mensaje inicial del sistema para invitar a la acción (Opcional, pero ayuda)
     st.session_state.messages = []
+
 if "codigo" not in st.session_state:
     st.session_state.codigo = None
 
+# Mostrar historial
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
 # 7. CHAT
-if prompt := st.chat_input("Escribe tu análisis aquí..."):
-    # VALIDACIÓN SIMPLE: Si pegan un texto gigante (más de 800 caracteres) de golpe, avisamos.
+if prompt := st.chat_input("Escribe aquí..."):
+    # Filtro de longitud (Anti-Copiar/Pegar masivo)
     if len(prompt) > 800:
-        st.toast("⚠️ ¡Ups! Esa respuesta es muy larga. Intenta ser más conciso y usar tus propias palabras.", icon="🚫")
+        st.toast("⚠️ Respuesta muy larga. Por favor, resume con tus propias palabras.", icon="🚫")
     
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -86,7 +97,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
     with st.chat_message("assistant"):
         try:
-            # Usamos el modelo gratuito que funcionó
             model = genai.GenerativeModel(
                 model_name='models/gemini-flash-latest', 
                 system_instruction=PROMPT_SISTEMA
