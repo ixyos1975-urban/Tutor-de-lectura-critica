@@ -91,36 +91,43 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     with st.chat_message("user"): 
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
+# LÍNEA 94: Configuración del motor de IA
+        model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=PROMPT)
+        
+        # LÍNEA 95: Traducción de roles (assistant -> model) para Google
+        historial_google = []
+        for m in st.session_state.messages:
+            rol_corregido = "model" if m["role"] == "assistant" else "user"
+            historial_google.append({"role": rol_corregido, "parts": [m["content"]]})
+        
         try:
-            # Volvemos al nombre estándar que es más compatible
-            model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=PROMPT)
-            
-            # Traducimos el historial para que Google lo entienda (user/model)
-            historial = []
-            for m in st.session_state.messages:
-                role = "model" if m["role"] == "assistant" else "user"
-                historial.append({"role": role, "parts": [m["content"]]})
-            
-            # Intentamos generar la respuesta
-            response = model.generate_content(historial)
+            # Generación de respuesta con el historial traducido
+            response = model.generate_content(historial_google)
             res = response.text
             
-            # Lógica del código de validación
+            # Lógica para otorgar el código de validación final
             if "completado" in res.lower() and not st.session_state.codigo:
                 st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
-                res += f"\n\n ✅ **VALIDADO. Código de verificación:** {st.session_state.codigo}"
+                res += f"\n\n ✅ **ANÁLISIS COMPLETADO. Código:** {st.session_state.codigo}"
             
+            # Mostrar la respuesta en pantalla y guardarla
             st.markdown(res)
             st.session_state.messages.append({"role": "assistant", "content": res})
             
         except Exception as e:
             st.error(f"Error de conexión con la IA: {e}")
-            st.info("Aviso: Si el error persiste, verifica tu API Key en los 'Secrets' de Streamlit.")
+            st.info("Si el error es 404, verifica tu API Key en los 'Secrets' de Streamlit.")
 
-# El botón de descarga debe estar fuera del bloque de chat
+# --- ÚLTIMA PARTE: BOTÓN DE DESCARGA (SIN SANGRÍA) ---
 if st.session_state.codigo:
-    rep = f"Reporte de Lectura: {c_sel} - {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
+    # Construcción del reporte de texto
+    reporte = f"Tutor de Análisis Crítico\nCurso: {c_sel} | {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
     for m in st.session_state.messages:
-        rep += f"{m['role'].upper()}: {m['content']}\n\n"
-    st.download_button("📥 Descargar Evidencia", rep, file_name=f"Analisis_{s_sel}.txt")
+        reporte += f"{m['role'].upper()}: {m['content']}\n\n"
+    
+    st.download_button(
+        label="📥 Descargar Evidencia de Aprendizaje",
+        data=reporte,
+        file_name=f"Analisis_{s_sel}.txt",
+        mime="text/plain"
+    )
