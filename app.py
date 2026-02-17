@@ -91,47 +91,34 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"): 
         st.markdown(prompt)
-
-# LÍNEA 95 ACTUALIZADA:
-model = genai.GenerativeModel('gemini-1.5-flash-latest', system_instruction=PROMPT)
+with st.chat_message("assistant"):
+        # Línea 94: Configuración
+        model = genai.GenerativeModel('gemini-1.5-flash-latest', system_instruction=PROMPT)
         
-        # LÍNEA 95: Traducción de roles (assistant -> model) para Google
+        # Línea 97: Traducción de historial (Alineada con la 94)
         historial_google = []
         for m in st.session_state.messages:
             rol_corregido = "model" if m["role"] == "assistant" else "user"
             historial_google.append({"role": rol_corregido, "parts": [m["content"]]})
         
         try:
-            # Generación de respuesta con el historial traducido
+            # Llamada a la API
             response = model.generate_content(historial_google)
             res = response.text
             
-            # Lógica para otorgar el código de validación final
             if "completado" in res.lower() and not st.session_state.codigo:
                 st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
                 res += f"\n\n ✅ **ANÁLISIS COMPLETADO. Código:** {st.session_state.codigo}"
             
-            # Mostrar la respuesta en pantalla y guardarla
             st.markdown(res)
             st.session_state.messages.append({"role": "assistant", "content": res})
             
         except Exception as e:
-            st.error(f"Error de conexión con la IA: {e}")
-            st.info("Si el error es 404, verifica tu API Key en los 'Secrets' de Streamlit.")
+            st.error(f"Error de conexión: {e}")
 
-# --- ÚLTIMA PARTE: BOTÓN DE DESCARGA (SIN SANGRÍA) ---
+# --- ESTA PARTE VA SIN ESPACIOS AL INICIO (MARGEN IZQUIERDO) ---
 if st.session_state.codigo:
-    # Construcción del reporte de texto
-    reporte = f"Tutor de Análisis Crítico\nCurso: {c_sel} | {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
+    reporte = f"Reporte de Lectura\nCurso: {c_sel} - {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
     for m in st.session_state.messages:
         reporte += f"{m['role'].upper()}: {m['content']}\n\n"
-    
-    st.download_button(
-        label="📥 Descargar Evidencia de Aprendizaje",
-        data=reporte,
-        file_name=f"Analisis_{s_sel}.txt",
-        mime="text/plain"
-    )
-
-
-
+    st.download_button("📥 Descargar Evidencia", reporte, file_name=f"Analisis_{s_sel}.txt")
