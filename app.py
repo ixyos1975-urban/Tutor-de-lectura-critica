@@ -91,8 +91,9 @@ if prompt := st.chat_input("Escribe tu análisis..."):
     with st.chat_message("user"): st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=PROMPT)
-        res = model.generate_content([{"role": m["role"], "parts": [m["content"]]} for m in st.session_state.messages]).text
+        model = genai.GenerativeModel('models/gemini-1.5-flash', system_instruction=PROMPT)
+        historial = [{"role": "model" if m["role"] == "assistant" else "user", "parts": [m["content"]]} for m in st.session_state.messages]
+res = model.generate_content(historial).text
         if "completado" in res.lower() and not st.session_state.codigo:
             st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
             res += f"\n\n✅ **VALIDADO. Código:** {st.session_state.codigo}"
