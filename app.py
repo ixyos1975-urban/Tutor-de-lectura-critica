@@ -48,13 +48,13 @@ with st.sidebar:
     if st.button("🗑️ Reiniciar Conversación"):
         st.session_state.messages = []
         st.session_state.codigo = None
-        st.session_state.ultima_interaccion = time.time() # Reiniciamos el reloj
+        st.session_state.ultima_interaccion = time.time()
         st.rerun()
 
 # 6. CARGAR CONTEXTO
 texto_referencia = leer_pdf(CONFIG[c_sel][a_sel][s_sel])
 
-# --- INSTRUCCIONES DEL TUTOR (Modificadas: Sin mencionar "Socrático") ---
+# --- INSTRUCCIONES DEL TUTOR ---
 PROMPT_SISTEMA = f"""
 Eres un Tutor de Análisis Crítico Universitario.
 Texto de referencia: {texto_referencia}
@@ -81,7 +81,6 @@ if "messages" not in st.session_state:
 if "codigo" not in st.session_state:
     st.session_state.codigo = None
 
-# Variable crítica para el temporizador
 if "ultima_interaccion" not in st.session_state:
     st.session_state.ultima_interaccion = time.time()
 
@@ -99,9 +98,9 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     minutos_transcurridos = int(tiempo_transcurrido / 60)
     
     # CASO 1: PENALIZACIÓN MÁXIMA (> 10 minutos)
-    if tiempo_transcurrido > 600: # 600 segundos = 10 minutos
+    if tiempo_transcurrido > 600:
         st.error(f"⏱️ **SESIÓN CERRADA POR INACTIVIDAD**")
-        st.warning(f"Han pasado {minutos_transcurridos} minutos desde tu última respuesta. El límite es de 10 minutos para evitar el uso de herramientas externas. Debes reiniciar.")
+        st.warning(f"Han pasado {minutos_transcurridos} minutos desde tu última respuesta. El límite es de 10 minutos. Debes reiniciar.")
         st.session_state.messages = []
         st.session_state.codigo = None
         st.session_state.ultima_interaccion = time.time()
@@ -111,10 +110,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
     # CASO 2: MENSAJE VÁLIDO
     else:
-        # Actualizamos el reloj
         st.session_state.ultima_interaccion = time.time()
         
-        # Filtro de longitud
         if len(prompt) > 800:
             st.toast("⚠️ Respuesta muy larga. Resume con tus palabras.", icon="🚫")
 
@@ -124,19 +121,15 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
         with st.chat_message("assistant"):
             try:
-                # Preparamos el mensaje
                 historial_envio = []
                 for m in st.session_state.messages:
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
                 
-                # Chivatazo de tiempo (> 5 minutos)
                 if tiempo_transcurrido > 300:
-                    mensaje_sistema = f"""[SISTEMA: El alumno tardó {minutos_transcurridos} minutos en responder esto. 
-                    ADVIÉRTELE que está cerca del límite de 10 minutos. Si su respuesta es corta o irrelevante, regáñalo.]"""
+                    mensaje_sistema = f"""[SISTEMA: El alumno tardó {minutos_transcurridos} minutos. ADVIÉRTELE sobre el límite de 10 minutos.]"""
                     historial_envio.append({"role": "user", "parts": [mensaje_sistema]})
 
-                # Llamada a la IA
                 model = genai.GenerativeModel(
                     model_name='models/gemini-flash-latest', 
                     system_instruction=PROMPT_SISTEMA
@@ -145,7 +138,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 response = model.generate_content(historial_envio)
                 res = response.text
                 
-                # Validación
                 if "completado" in res.lower() and not st.session_state.codigo:
                     st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
                     res += f"\n\n ✅ **VALIDADO.** Código: {st.session_state.codigo}"
@@ -156,9 +148,22 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# 8. DESCARGA
+# 8. DESCARGA (Modificado para usar el Código como Nombre de Archivo)
 if st.session_state.codigo:
-    reporte = f"Sesión: {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
+    # Limpiamos los corchetes para el nombre del archivo (Ej: [AC-1234] -> AC-1234)
+    nombre_archivo = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
+    
+    reporte = f"REPORTE DE EVIDENCIA - TUTOR DE ANÁLISIS CRÍTICO\n"
+    reporte += f"Sesión: {s_sel}\n"
+    reporte += f"Código de Validación: {st.session_state.codigo}\n\n"
+    reporte += "HISTORIAL DE INTERACCIÓN:\n"
+    reporte += "-" * 30 + "\n"
     for m in st.session_state.messages:
         reporte += f"{m['role'].upper()}: {m['content']}\n\n"
-    st.download_button("📥 Descargar Evidencia", reporte, file_name="Evidencia.txt")
+        
+    st.download_button(
+        label=f"📥 Descargar Evidencia ({nombre_archivo})", 
+        data=reporte, 
+        file_name=nombre_archivo,
+        mime="text/plain"
+    )
