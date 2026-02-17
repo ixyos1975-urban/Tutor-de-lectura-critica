@@ -7,7 +7,8 @@ st.set_page_config(page_title="Tutor de análisis crítico de lectura", layout="
 
 # CONFIGURACIÓN API
 if "GOOGLE_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+# LÍNEA 10 CORREGIDA:
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"], transport='rest')
 else:
     st.error("Error: Configure la API Key en los Secrets.")
     st.stop()
@@ -91,8 +92,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     with st.chat_message("user"): 
         st.markdown(prompt)
 
-# LÍNEA 94: Configuración del motor de IA
-        model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=PROMPT)
+# LÍNEA 95 ACTUALIZADA:
+model = genai.GenerativeModel('gemini-1.5-flash-latest', system_instruction=PROMPT)
         
         # LÍNEA 95: Traducción de roles (assistant -> model) para Google
         historial_google = []
@@ -131,3 +132,4 @@ if st.session_state.codigo:
         file_name=f"Analisis_{s_sel}.txt",
         mime="text/plain"
     )
+
