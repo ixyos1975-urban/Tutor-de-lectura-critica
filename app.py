@@ -7,15 +7,14 @@ from PyPDF2 import PdfReader
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Tutor de Análisis Crítico", layout="wide")
 
-# 2. CONEXIÓN API
+# 2. CONEXIÓN API (Sin 'transport=rest' para probar el protocolo estándar)
 if "GOOGLE_API_KEY" in st.secrets:
-    # Usamos transport='rest' para forzar una conexión más estable en la nube
-    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"], transport='rest')
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
-    st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
+    st.error("⚠️ No se encontró la API Key en Streamlit Secrets.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS (Verifica que estos nombres existan en tus carpetas de GitHub)
+# 3. CONFIGURACIÓN DE RUTAS (Asegúrate de que coincidan con tus carpetas en GitHub)
 CONFIG = {
     "Historia 1": {
         "Actividad 1": {
@@ -25,7 +24,7 @@ CONFIG = {
 }
 
 # 4. MOTOR DE LECTURA DE PDF
-def leer_pdf(rutas):
+def leer_contenido_pdf(rutas):
     texto = ""
     for r in rutas:
         if os.path.exists(r):
@@ -33,80 +32,86 @@ def leer_pdf(rutas):
                 lector = PdfReader(r)
                 for pagina in lector.pages:
                     texto += pagina.extract_text() + "\n"
-            except: continue
+            except:
+                continue
     return texto
 
-# 5. MENÚ LATERAL (SIDEBAR)
+# 5. MENÚ LATERAL
 with st.sidebar:
-    st.title("📂 Menú de Tutoría")
-    c_sel = st.selectbox("Curso", list(CONFIG.keys()))
-    a_sel = st.selectbox("Actividad", list(CONFIG[c_sel].keys()))
-    s_sel = st.selectbox("Sesión", list(CONFIG[c_sel][a_sel].keys()))
+    st.title("📂 Navegación")
+    curso = st.selectbox("Curso", list(CONFIG.keys()))
+    actividad = st.selectbox("Actividad", list(CONFIG[curso].keys()))
+    sesion = st.selectbox("Sesión", list(CONFIG[curso][actividad].keys()))
     
     st.divider()
-    if st.button("🔄 Reiniciar Chat"):
+    if st.button("🗑️ Reiniciar Chat"):
         st.session_state.messages = []
         st.session_state.codigo = None
         st.rerun()
-    
-    # AYUDA PARA APRENDER: Esto muestra qué versión está usando el servidor
-    import google.generativeai as _genai
-    st.caption(f"Versión de librería instalada: {_genai.__version__}")
 
-# 6. CONFIGURACIÓN DEL TUTOR
-texto_referencia = leer_pdf(CONFIG[c_sel][a_sel][s_sel])
+# 6. CARGA DE CONTEXTO
+material = leer_contenido_pdf(CONFIG[curso][actividad][sesion])
 
-PROMPT_SISTEMA = f"""Eres un Tutor Socrático experto. No des respuestas, haz preguntas.
-Texto de referencia: {texto_referencia}
-Si el alumno demuestra un análisis excelente, usa la palabra 'COMPLETADO'."""
+# Instrucciones para la IA
+PROMPT_SISTEMA = f"""Eres un Tutor Socrático. 
+Tu material de referencia es: {material}
+REGLAS:
+- Nunca des respuestas directas.
+- Haz preguntas que inviten a la reflexión.
+- Usa la palabra 'COMPLETADO' solo si el análisis es profundo."""
 
-st.title(f"💬 Sesión: {s_sel}")
+st.title(f"💬 Sesión: {sesion}")
 
-# Memoria del chat
+# Inicialización de memoria
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "codigo" not in st.session_state:
     st.session_state.codigo = None
 
 # Mostrar historial
-for m in st.session_state.messages:
-    with st.chat_message(m["role"]):
-        st.markdown(m["content"])
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
-# 7. INTERACCIÓN (Entrada y respuesta)
-if prompt := st.chat_input("Escribe tu análisis aquí..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+# 7. FLUJO DE CHAT (Entrada y Respuesta)
+if prompt_usuario := st.chat_input("Escribe tu análisis aquí..."):
+    st.session_state.messages.append({"role": "user", "content": prompt_usuario})
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(prompt_usuario)
 
     with st.chat_message("assistant"):
         try:
-            # Usamos el nombre de modelo más estándar
-            model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=PROMPT_SISTEMA)
+            # AJUSTE CRÍTICO: Usamos el nombre completo del modelo 'models/gemini-1.5-flash'
+            model = genai.GenerativeModel(
+                model_name='models/gemini-1.5-flash', 
+                system_instruction=PROMPT_SISTEMA
+            )
             
-            # Traducción de roles: assistant -> model
-            historial = []
+            # Traducimos roles para Google (assistant -> model)
+            history = []
             for m in st.session_state.messages:
-                r = "model" if m["role"] == "assistant" else "user"
-                historial.append({"role": r, "parts": [m["content"]]})
+                role = "model" if m["role"] == "assistant" else "user"
+                history.append({"role": role, "parts": [m["content"]]})
             
-            # Llamada a la IA
-            response = model.generate_content(historial)
-            res = response.text
+            # Llamada a la API
+            respuesta = model.generate_content(history)
+            texto_ia = respuesta.text
             
-            if "completado" in res.lower() and not st.session_state.codigo:
-                st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
-                res += f"\n\n ✅ **VALIDADO.** Código: {st.session_state.codigo}"
+            # Lógica de validación
+            if "completado" in texto_ia.lower() and not st.session_state.codigo:
+                st.session_state.codigo = f"[EXITO-{random.randint(100, 999)}]"
+                texto_ia += f"\n\n✅ **SESIÓN FINALIZADA.** Código: {st.session_state.codigo}"
             
-            st.markdown(res)
-            st.session_state.messages.append({"role": "assistant", "content": res})
+            st.markdown(texto_ia)
+            st.session_state.messages.append({"role": "assistant", "content": texto_ia})
             
         except Exception as e:
-            st.error(f"Error de conexión con la IA: {e}")
+            st.error(f"Error de conexión: {e}")
+            st.info("Sugerencia: Si el error 404 persiste, intenta generar una nueva API Key en Google AI Studio.")
 
 # 8. BOTÓN DE DESCARGA
 if st.session_state.codigo:
-    reporte = f"Sesión: {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
+    reporte = f"Evidencia de Tutoría\nSesión: {sesion}\nCódigo: {st.session_state.codigo}\n\n"
     for m in st.session_state.messages:
         reporte += f"{m['role'].upper()}: {m['content']}\n\n"
-    st.download_button("📥 Descargar Reporte", reporte, file_name=f"Resultado.txt")
+    st.download_button("📥 Descargar Reporte", reporte, file_name=f"Resultado_{sesion}.txt")
