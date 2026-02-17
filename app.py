@@ -1,124 +1,116 @@
 import streamlit as st
 import google.generativeai as genai
 import random
+import os
 from PyPDF2 import PdfReader
 
-st.set_page_config(page_title="Tutor de análisis crítico de lectura", layout="wide")
+# 1. CONFIGURACIÓN DE LA PÁGINA (Título en la pestaña del navegador)
+st.set_page_config(page_title="Tutor de Análisis Crítico", layout="wide")
 
-# CONFIGURACIÓN API
+# 2. CONEXIÓN CON LA API DE GOOGLE
+# Verificamos que la llave esté en los 'Secrets' de Streamlit
 if "GOOGLE_API_KEY" in st.secrets:
-    # Esta línea DEBE tener 4 espacios al inicio
+    # Usamos transport='rest' para evitar errores de conexión 404 en la nube
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"], transport='rest')
 else:
-    st.error("Error: Configure la API Key en los Secrets.")
+    st.error("⚠️ No se encontró la llave API. Configúrala en los Secrets de Streamlit.")
     st.stop()
 
-# MATRIZ ACADÉMICA COMPLETA (Curso -> Actividad -> Sesión -> Lista de archivos)
+# 3. ESTRUCTURA DE ARCHIVOS (Asegúrate de que estas carpetas existan en GitHub)
 CONFIG = {
     "Historia 1": {
-        "Actividad 1": {"Sesión 1": ["documentos/Historia_1/Act_1/Sesion_1/f1.pdf", "documentos/Historia_1/Act_1/Sesion_1/f2.pdf", "documentos/Historia_1/Act_1/Sesion_1/f3.pdf"]},
-        "Actividad 2": {"Sesión 2": ["documentos/Historia_1/Act_2/Sesion_2/f1.pdf", "documentos/Historia_1/Act_2/Sesion_2/f2.pdf"]},
-        "Actividad 3": {"Sesión 3": ["documentos/Historia_1/Act_3/Sesion_3/f1.pdf"]},
-    },
-    "Historia 2": {
         "Actividad 1": {
-            "Sesión 1": ["documentos/Historia_2/Act_1/Sesion_1/f1.pdf", "documentos/Historia_2/Act_1/Sesion_1/f2.pdf"],
-            "Sesión 2": ["documentos/Historia_2/Act_1/Sesion_2/f1.pdf", "documentos/Historia_2/Act_1/Sesion_2/f2.pdf"]
-        },
-        "Actividad 2": {
-            "Sesión 3": ["documentos/Historia_2/Act_2/Sesion_3/f1.pdf", "documentos/Historia_2/Act_2/Sesion_3/f2.pdf"],
-            "Sesión 4": ["documentos/Historia_2/Act_2/Sesion_4/f1.pdf", "documentos/Historia_2/Act_2/Sesion_4/f2.pdf"]
-        },
-        "Actividad 3": {
-            "Sesión 5": ["documentos/Historia_2/Act_3/Sesion_5/f1.pdf", "documentos/Historia_2/Act_3/Sesion_5/f2.pdf"]
-        }
-    },
-    "POT": {
-        "Actividad 1": {
-            "Sesión 1": ["documentos/POT/Act_1/Sesion_1/f1.pdf"],
-            "Sesión 2": ["documentos/POT/Act_1/Sesion_2/f1.pdf"],
-            "Sesión 3": ["documentos/POT/Act_1/Sesion_3/f1.pdf"]
-        },
-        "Actividad 2": {
-            "Sesión 4": ["documentos/POT/Act_2/Sesion_4/f1.pdf"],
-            "Sesión 5": ["documentos/POT/Act_2/Sesion_5/f1.pdf"]
-        },
-        "Actividad 3": {
-            "Sesión 6": ["documentos/POT/Act_3/Sesion_6/f1.pdf"],
-            "Sesión 7": ["documentos/POT/Act_3/Sesion_7/f1.pdf"]
+            "Sesión 1": ["documentos/Historia_1/Act_1/Sesion_1/f1.pdf"]
         }
     }
 }
 
-def extraer_texto_multiple(lista_rutas):
+# 4. FUNCIÓN PARA LEER EL CONTENIDO DE LOS PDFS
+def extraer_texto_pdf(rutas):
     texto_total = ""
-    for ruta in lista_rutas:
-        try:
-            reader = PdfReader(ruta)
-            for page in reader.pages:
-                texto_total += page.extract_text()
-        except: continue
-    return texto_total if texto_total else None
+    for ruta in rutas:
+        if os.path.exists(ruta):
+            try:
+                reader = PdfReader(ruta)
+                for page in reader.pages:
+                    texto_total += page.extract_text() + "\n"
+            except Exception:
+                continue
+    return texto_total
 
-# INTERFAZ DE SELECCIÓN
+# 5. BARRA LATERAL DE NAVEGACIÓN
 with st.sidebar:
-    st.title("🎓 Control Académico")
-    c_sel = st.selectbox("Curso:", list(CONFIG.keys()))
-    a_sel = st.selectbox("Actividad:", list(CONFIG[c_sel].keys()))
-    s_sel = st.selectbox("Sesión:", list(CONFIG[c_sel][a_sel].keys()))
+    st.title("📂 Menú de Tutoría")
+    curso = st.selectbox("Curso", list(CONFIG.keys()))
+    actividad = st.selectbox("Actividad", list(CONFIG[curso].keys()))
+    sesion = st.selectbox("Sesión", list(CONFIG[curso][actividad].keys()))
     
-    if st.button("🗑️ Reiniciar Sesión"):
-        st.session_state.messages = []; st.session_state.codigo = None; st.rerun()
+    if st.button("🔄 Reiniciar Sesión"):
+        st.session_state.messages = []
+        st.session_state.codigo = None
+        st.rerun()
 
-# LÓGICA DEL ASISTENTE
-texto_contexto = extraer_texto_multiple(CONFIG[c_sel][a_sel][s_sel])
+# 6. CARGA DEL MATERIAL DE LECTURA
+material = extraer_texto_pdf(CONFIG[curso][actividad][sesion])
 
-if not texto_contexto:
-    st.error("⚠️ No se pudieron cargar los archivos de esta sesión.")
-    st.stop()
+# Instrucciones para que la IA se comporte como un tutor
+PROMPT_SISTEMA = f"""Eres un Tutor Socrático experto en lectura crítica. 
+Material de lectura: {material}
+REGLAS:
+1. No resuelvas las dudas directamente; haz preguntas que guíen al alumno.
+2. Solo cuando el alumno haga un análisis profundo, escribe la palabra 'COMPLETADO'."""
 
-PROMPT = f"Eres un 'Tutor de análisis crítico de lectura'. Curso: {c_sel}, {a_sel}, {s_sel}. Texto: {texto_contexto}. REGLA: No des respuestas, solo preguntas socráticas. Usa 'COMPLETADO' para cerrar."
+st.title(f"💬 Sesión: {sesion}")
 
-st.title(f"💬 {c_sel} - {s_sel}")
+# Inicialización de la memoria del chat (State)
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "codigo" not in st.session_state:
+    st.session_state.codigo = None
 
-if "messages" not in st.session_state: st.session_state.messages = []
-if "codigo" not in st.session_state: st.session_state.codigo = None
-
+# Dibujar los mensajes previos de la conversación
 for m in st.session_state.messages:
-    with st.chat_message(m["role"]): st.markdown(m["content"])
+    with st.chat_message(m["role"]):
+        st.markdown(m["content"])
 
-if prompt := st.chat_input("Escribe tu análisis aquí..."):
+# 7. INTERACCIÓN (Entrada de texto del usuario)
+if prompt := st.chat_input("Escribe tu reflexión aquí..."):
+    # Guardar y mostrar lo que escribe el alumno
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"): 
+    with st.chat_message("user"):
         st.markdown(prompt)
-with st.chat_message("assistant"):
-        # Línea 94: Configuración
-        model = genai.GenerativeModel('gemini-1.5-flash-latest', system_instruction=PROMPT)
-        
-        # Línea 97: Traducción de historial (Alineada con la 94)
-        historial_google = []
-        for m in st.session_state.messages:
-            rol_corregido = "model" if m["role"] == "assistant" else "user"
-            historial_google.append({"role": rol_corregido, "parts": [m["content"]]})
-        
+
+    # Respuesta del asistente (Solo ocurre si el usuario escribió algo)
+    with st.chat_message("assistant"):
         try:
-            # Llamada a la API
-            response = model.generate_content(historial_google)
-            res = response.text
+            # Usamos 'gemini-1.5-flash-latest' para evitar errores de versión
+            model = genai.GenerativeModel('gemini-1.5-flash-latest', system_instruction=PROMPT_SISTEMA)
             
-            if "completado" in res.lower() and not st.session_state.codigo:
+            # Traducimos los nombres de los roles (Streamlit: assistant -> Google: model)
+            historial_api = []
+            for m in st.session_state.messages:
+                rol_google = "model" if m["role"] == "assistant" else "user"
+                historial_api.append({"role": rol_google, "parts": [m["content"]]})
+            
+            # Pedimos la respuesta a Google
+            respuesta_ia = model.generate_content(historial_api)
+            texto_final = respuesta_ia.text
+            
+            # Si el tutor valida el análisis, generamos el código de éxito
+            if "completado" in texto_final.lower() and not st.session_state.codigo:
                 st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
-                res += f"\n\n ✅ **ANÁLISIS COMPLETADO. Código:** {st.session_state.codigo}"
+                texto_final += f"\n\n ✅ **ANÁLISIS VALIDADO.** Código: {st.session_state.codigo}"
             
-            st.markdown(res)
-            st.session_state.messages.append({"role": "assistant", "content": res})
+            st.markdown(texto_final)
+            st.session_state.messages.append({"role": "assistant", "content": texto_final})
             
         except Exception as e:
-            st.error(f"Error de conexión: {e}")
+            st.error(f"Error de conexión con la IA: {e}")
 
-# --- ESTA PARTE VA SIN ESPACIOS AL INICIO (MARGEN IZQUIERDO) ---
+# 8. EXPORTACIÓN DE RESULTADOS (Se activa al finalizar)
 if st.session_state.codigo:
-    reporte = f"Reporte de Lectura\nCurso: {c_sel} - {s_sel}\nCódigo: {st.session_state.codigo}\n\n"
+    reporte = f"REPORTE DE EVIDENCIA\nSesión: {sesion}\nCódigo: {st.session_state.codigo}\n\n"
     for m in st.session_state.messages:
         reporte += f"{m['role'].upper()}: {m['content']}\n\n"
-    st.download_button("📥 Descargar Evidencia", reporte, file_name=f"Analisis_{s_sel}.txt")
+    
+    st.download_button("📥 Descargar reporte de sesión", reporte, file_name=f"Evidencia_{sesion}.txt")
