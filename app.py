@@ -67,7 +67,7 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# 7. CHAT CON EL MODELO CORRECTO
+# 7. CHAT CON EL MODELO GRATUITO
 if prompt := st.chat_input("Escribe tu análisis aquí..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -75,9 +75,9 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
     with st.chat_message("assistant"):
         try:
-            # ¡AQUÍ ESTÁ LA SOLUCIÓN! Usamos el nombre exacto de tu lista
+            # CAMBIO CLAVE: Usamos 'gemini-flash-latest' que aparece en tu lista y es GRATIS
             model = genai.GenerativeModel(
-                model_name='models/gemini-2.0-flash', 
+                model_name='models/gemini-flash-latest', 
                 system_instruction=PROMPT_SISTEMA
             )
             
