@@ -2,7 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import random
 import os
-import time  # <--- NUEVA LIBRERÍA PARA CONTROLAR EL TIEMPO
+import time
 from PyPDF2 import PdfReader
 
 # 1. CONFIGURACIÓN DE PÁGINA
@@ -15,7 +15,7 @@ else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS
+# 3. RUTAS DE TUS DOCUMENTOS
 CONFIG = {
     "Historia 1": {
         "Actividad 1": {
@@ -54,20 +54,20 @@ with st.sidebar:
 # 6. CARGAR CONTEXTO
 texto_referencia = leer_pdf(CONFIG[c_sel][a_sel][s_sel])
 
-# --- INSTRUCCIONES DEL TUTOR (Ajustadas para recibir alertas de tiempo) ---
+# --- INSTRUCCIONES DEL TUTOR (Modificadas: Sin mencionar "Socrático") ---
 PROMPT_SISTEMA = f"""
-Eres un Tutor Socrático Universitario.
+Eres un Tutor de Análisis Crítico Universitario.
 Texto de referencia: {texto_referencia}
 
 ESTRUCTURA DE COMPORTAMIENTO:
 1. FASE INICIAL: No inicies el tema. Saluda y espera a que el alumno proponga el tema/tesis.
-2. FASE DESARROLLO: Usa el método socrático. Cuestiona.
+2. FASE DESARROLLO: Tu método es el cuestionamiento profundo. NO des respuestas directas. Haz preguntas que desafíen los argumentos del alumno basándote estrictamente en el texto.
 3. ANTI-PLAGIO: Si la respuesta es genérica o parece de IA, exige opinión propia y citas del PDF.
 
-INSTRUCCIÓN ESPECIAL DE TIEMPO (Muy Importante):
+INSTRUCCIÓN ESPECIAL DE TIEMPO:
 A veces recibirás una nota del sistema diciendo "[SISTEMA: El alumno tardó X minutos]".
-- Si el alumno tardó entre 5 y 10 minutos: Tu respuesta DEBE empezar con una advertencia amable pero firme sobre el tiempo. Ejemplo: "Te tomaste un tiempo considerable. Recuerda que el límite es de 10 minutos. Sobre tu punto..."
-- Si el alumno responde cosas vagas como "estoy aquí" o "espera" tras una demora: Sé severo. Dile: "Esa respuesta no aporta al análisis y el tiempo sigue corriendo. Necesito argumentos sobre el texto ahora mismo o la sesión se cerrará."
+- Si el alumno tardó entre 5 y 10 minutos: Tu respuesta DEBE empezar con una advertencia amable pero firme sobre el tiempo. Ejemplo: "Te tomaste un tiempo considerable. Recuerda que el límite es de 10 minutos por intervención. Sobre tu punto..."
+- Si el alumno responde cosas vagas tras una demora: Sé severo. Dile: "Esa respuesta no aporta al análisis y el tiempo sigue corriendo. Necesito argumentos sobre el texto ahora mismo o la sesión se cerrará."
 
 SOLO escribe 'COMPLETADO' si hay análisis profundo y citas correctas.
 """
@@ -90,7 +90,7 @@ for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
 
-# 7. CHAT CON LÓGICA DE TIEMPO "ANTI-FRAUDE"
+# 7. CHAT CON LÓGICA DE TIEMPO
 if prompt := st.chat_input("Escribe tu análisis aquí..."):
     
     # --- PASO A: VERIFICACIÓN DEL RELOJ ---
@@ -98,23 +98,23 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     tiempo_transcurrido = tiempo_actual - st.session_state.ultima_interaccion
     minutos_transcurridos = int(tiempo_transcurrido / 60)
     
-    # CASO 1: PENALIZACIÓN MÁXIMA (> 1 minuto)
-    if tiempo_transcurrido > 60: # 60 segundos = 1 minutos
+    # CASO 1: PENALIZACIÓN MÁXIMA (> 10 minutos)
+    if tiempo_transcurrido > 600: # 600 segundos = 10 minutos
         st.error(f"⏱️ **SESIÓN CERRADA POR INACTIVIDAD**")
-        st.warning(f"Han pasado {minutos_transcurridos} minutos desde tu última respuesta. El límite es de 1 minuto para evitar el uso de herramientas externas. Debes reiniciar.")
-        st.session_state.messages = [] # Borramos memoria
+        st.warning(f"Han pasado {minutos_transcurridos} minutos desde tu última respuesta. El límite es de 10 minutos para evitar el uso de herramientas externas. Debes reiniciar.")
+        st.session_state.messages = []
         st.session_state.codigo = None
-        st.session_state.ultima_interaccion = time.time() # Reset forzado
+        st.session_state.ultima_interaccion = time.time()
         if st.button("Empezar de nuevo"):
             st.rerun()
-        st.stop() # Detiene la ejecución aquí. No deja pasar al Tutor.
+        st.stop()
 
-    # CASO 2: MENSAJE VÁLIDO (Pasa al Tutor)
+    # CASO 2: MENSAJE VÁLIDO
     else:
-        # Actualizamos el reloj para la próxima vuelta
+        # Actualizamos el reloj
         st.session_state.ultima_interaccion = time.time()
         
-        # Filtro de longitud (Anti-CopyPaste masivo)
+        # Filtro de longitud
         if len(prompt) > 800:
             st.toast("⚠️ Respuesta muy larga. Resume con tus palabras.", icon="🚫")
 
@@ -124,18 +124,16 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
         with st.chat_message("assistant"):
             try:
-                # Preparamos el mensaje para Gemini
+                # Preparamos el mensaje
                 historial_envio = []
                 for m in st.session_state.messages:
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
                 
-                # --- TRUCO: INYECTAR CHIVATAZO DE TIEMPO ---
-                # Si tardó más de 5 minutos (300 segundos), le avisamos secretamente a Gemini
+                # Chivatazo de tiempo (> 5 minutos)
                 if tiempo_transcurrido > 300:
                     mensaje_sistema = f"""[SISTEMA: El alumno tardó {minutos_transcurridos} minutos en responder esto. 
                     ADVIÉRTELE que está cerca del límite de 10 minutos. Si su respuesta es corta o irrelevante, regáñalo.]"""
-                    # Agregamos esta nota oculta al historial que se envía (no se ve en pantalla)
                     historial_envio.append({"role": "user", "parts": [mensaje_sistema]})
 
                 # Llamada a la IA
@@ -147,7 +145,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 response = model.generate_content(historial_envio)
                 res = response.text
                 
-                # Validación de éxito
+                # Validación
                 if "completado" in res.lower() and not st.session_state.codigo:
                     st.session_state.codigo = f"[AC-{random.randint(1000, 9999)}]"
                     res += f"\n\n ✅ **VALIDADO.** Código: {st.session_state.codigo}"
