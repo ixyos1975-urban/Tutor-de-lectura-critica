@@ -15,11 +15,50 @@ else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS
+# 3. RUTAS DE DOCUMENTOS (NOMBRES HOMOLOGADOS)
 CONFIG = {
-    "Historia 1": {
-        "Actividad 1": {
-            "Sesión 1": ["documentos/Historia_1/Act_1/Sesion_1/f1.pdf"]
+    "Urb-Historia 1": {
+        "Actividad_1": [
+            "documentos/Urb-Historia 1/Actividad_1/Archivo_1.pdf",
+            "documentos/Urb-Historia 1/Actividad_1/Archivo_2.pdf",
+            "documentos/Urb-Historia 1/Actividad_1/Archivo_3.pdf"
+        ],
+        "Actividad_2": [
+            "documentos/Urb-Historia 1/Actividad_2/Archivo_4.pdf",
+            "documentos/Urb-Historia 1/Actividad_2/Archivo_5.pdf"
+        ],
+        "Actividad_3": [
+            "documentos/Urb-Historia 1/Actividad_3/Archivo_6.pdf"
+        ]
+    },
+    "Urb-Historia 2": {
+        "Actividad_1": {
+            "Sesión_1": [
+                "documentos/Urb-Historia 2/Actividad_1/Sesión_1/Archivo_1.pdf",
+                "documentos/Urb-Historia 2/Actividad_1/Sesión_1/Archivo_2.pdf"
+            ],
+            "Sesión_2": [
+                "documentos/Urb-Historia 2/Actividad_1/Sesión_2/Archivo_3.pdf",
+                "documentos/Urb-Historia 2/Actividad_1/Sesión_2/Archivo_4.pdf"
+            ],
+            "Sesión_3": [
+                "documentos/Urb-Historia 2/Actividad_1/Sesión_3/Archivo_5.pdf"
+            ]
+        }
+    },
+    "Arq-POT": {
+        "Actividad_1": {
+            "Sesión_1": ["documentos/Arq-POT/Actividad_1/Sesión_1/Archivo_1.pdf"],
+            "Sesión_2": ["documentos/Arq-POT/Actividad_1/Sesión_2/Archivo_2.pdf"],
+            "Sesión_3": ["documentos/Arq-POT/Actividad_1/Sesión_3/Archivo_3.pdf"]
+        },
+        "Actividad_2": {
+            "Sesión_4": ["documentos/Arq-POT/Actividad_2/Sesión_4/Archivo_4.pdf"],
+            "Sesión_5": ["documentos/Arq-POT/Actividad_2/Sesión_5/Archivo_5.pdf"]
+        },
+        "Actividad_3": {
+            "Sesión_6": ["documentos/Arq-POT/Actividad_3/Sesión_6/Archivo_6.pdf"],
+            "Sesión_7": ["documentos/Arq-POT/Actividad_3/Sesión_7/Archivo_7.pdf"]
         }
     }
 }
@@ -53,7 +92,6 @@ if not st.session_state.user_id:
         email_input = st.text_input("Correo Electrónico:", placeholder="usuario@unisalle.edu.co")
         
         if st.button("Iniciar Sesión"):
-            # Validación estricta de dominio
             if email_input.endswith("@unisalle.edu.co"):
                 st.session_state.user_id = email_input.strip().lower()
                 st.session_state.ultima_interaccion = time.time()
@@ -72,21 +110,29 @@ if st.session_state.intentos > MAX_INTENTOS:
         st.rerun()
     st.stop()
 
-# 5. MENÚ LATERAL
+# 5. MENÚ LATERAL DINÁMICO
 with st.sidebar:
-    # Mostramos el usuario limpio (sin el @unisalle...) para que se vea bien
     usuario_corto = st.session_state.user_id.split('@')[0]
     st.title(f"👤 {usuario_corto}")
     
-    # Barra de progreso visual
     progreso = st.session_state.intentos / MAX_INTENTOS
     st.progress(progreso, text=f"Intento {st.session_state.intentos} de {MAX_INTENTOS}")
     
     st.divider()
     
-    c_sel = st.selectbox("Curso", list(CONFIG.keys()))
+    # Selectores dinámicos
+    c_sel = st.selectbox("Asignatura", list(CONFIG.keys()))
     a_sel = st.selectbox("Actividad", list(CONFIG[c_sel].keys()))
-    s_sel = st.selectbox("Sesión", list(CONFIG[c_sel][a_sel].keys()))
+    
+    # Lógica inteligente: ¿Hay sesiones o son archivos directos?
+    if isinstance(CONFIG[c_sel][a_sel], dict):
+        s_sel = st.selectbox("Sesión", list(CONFIG[c_sel][a_sel].keys()))
+        rutas_archivos = CONFIG[c_sel][a_sel][s_sel]
+        titulo_interfaz = f"💬 {c_sel} | {a_sel} | {s_sel}"
+    else:
+        s_sel = None
+        rutas_archivos = CONFIG[c_sel][a_sel]
+        titulo_interfaz = f"💬 {c_sel} | {a_sel}"
     
     st.divider()
     if st.button("🗑️ Reiniciar (Gasta 1 Intento)"):
@@ -107,7 +153,7 @@ def leer_pdf(rutas):
             except: continue
     return texto
 
-texto_referencia = leer_pdf(CONFIG[c_sel][a_sel][s_sel])
+texto_referencia = leer_pdf(rutas_archivos)
 
 # --- CEREBRO DEL TUTOR ---
 PROMPT_SISTEMA = f"""
@@ -127,9 +173,8 @@ VALIDACIÓN:
 Escribe 'COMPLETADO' SOLO si hay análisis profundo, propio y citas correctas.
 """
 
-st.title(f"💬 Sesión: {s_sel}")
+st.title(titulo_interfaz)
 
-# Historial de chat
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         st.markdown(m["content"])
@@ -141,7 +186,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     tiempo_transcurrido = tiempo_actual - st.session_state.ultima_interaccion
     minutos = int(tiempo_transcurrido / 60)
     
-    # CASO 1: INACTIVIDAD (> 10 mins)
     if tiempo_transcurrido > 600:
         st.error(f"⏱️ **TIEMPO AGOTADO POR INACTIVIDAD**")
         st.warning(f"Pasaron {minutos} minutos sin actividad. Se ha descontado 1 intento.")
@@ -152,7 +196,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         time.sleep(3)
         st.rerun()
 
-    # CASO 2: INTERACCIÓN VÁLIDA
     else:
         st.session_state.ultima_interaccion = time.time()
         
@@ -170,7 +213,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
                 
-                # Advertencia de tiempo (5-10 mins)
                 if tiempo_transcurrido > 300:
                     aviso = f"[SISTEMA: El alumno tardó {minutos} min. Adviértele sobre inactividad.]"
                     historial_envio.append({"role": "user", "parts": [aviso]})
@@ -179,12 +221,9 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 response = model.generate_content(historial_envio)
                 res = response.text
                 
-                # GENERACIÓN DE CÓDIGO UNISALLE (ID + INTENTO + RANDOM)
                 if "completado" in res.lower() and not st.session_state.codigo:
                     rand_code = random.randint(1000, 9999)
-                    # Tomamos el usuario antes del @ y lo ponemos en mayúsculas
                     usuario_clean = st.session_state.user_id.split('@')[0].upper()
-                    # Estructura del código: [JUAN.PEREZ-INT1-8492]
                     codigo_final = f"[{usuario_clean}-INT{st.session_state.intentos}-{rand_code}]"
                     
                     st.session_state.codigo = codigo_final
@@ -196,12 +235,10 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# 8. DESCARGA OFICIAL (Nombre del archivo = Código)
+# 8. DESCARGA OFICIAL
 if st.session_state.codigo:
-    # 1. Quitamos los corchetes para el nombre del archivo
     nombre_archivo_limpio = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
     
-    # 2. Preparamos el contenido del archivo
     reporte = f"REPORTE DE ANÁLISIS CRÍTICO - UNISALLE\n"
     reporte += f"Estudiante: {st.session_state.user_id}\n"
     reporte += f"Código de Validación: {st.session_state.codigo}\n"
@@ -211,7 +248,6 @@ if st.session_state.codigo:
         
     st.success("🎉 Actividad completada correctamente.")
     
-    # 3. Botón de descarga con el nombre exacto
     st.download_button(
         label=f"📥 Descargar Evidencia ({nombre_archivo_limpio})", 
         data=reporte, 
