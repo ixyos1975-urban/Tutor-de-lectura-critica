@@ -92,8 +92,8 @@ if not st.session_state.user_id:
     # Nuevo título centrado con salto de línea
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     
-    # Fecha de creación y versión ajustada
-    st.markdown("<p style='text-align: center; color: gray;'><small><b>Lanzamiento Operativo:</b> Febrero 19 de 2026 | <b>Versión:</b> 1.30</small></p>", unsafe_allow_html=True)
+    # Fecha de creación y versión unificada con formato numérico
+    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 1.30</b> (19/02/2026)</small></p>", unsafe_allow_html=True)
     
     st.divider()
     
