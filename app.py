@@ -15,7 +15,7 @@ else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS (NOMBRES HOMOLOGADOS)
+# 3. RUTAS DE DOCUMENTOS (NUEVA ESTRUCTURA ACTUALIZADA)
 CONFIG = {
     "Urb-Historia 1": {
         "Actividad_1": [
@@ -40,9 +40,21 @@ CONFIG = {
             "Sesión_2": [
                 "documentos/Urb-Historia 2/Actividad_1/Sesión_2/Archivo_3.pdf",
                 "documentos/Urb-Historia 2/Actividad_1/Sesión_2/Archivo_4.pdf"
-            ],
+            ]
+        },
+        "Actividad_2": {
             "Sesión_3": [
-                "documentos/Urb-Historia 2/Actividad_1/Sesión_3/Archivo_5.pdf"
+                "documentos/Urb-Historia 2/Actividad_2/Sesión_3/Archivo_5.pdf",
+                "documentos/Urb-Historia 2/Actividad_2/Sesión_3/Archivo_6.pdf"
+            ],
+            "Sesión_4": [
+                "documentos/Urb-Historia 2/Actividad_2/Sesión_4/Archivo_7.pdf",
+                "documentos/Urb-Historia 2/Actividad_2/Sesión_4/Archivo_8.pdf"
+            ]
+        },
+        "Actividad_3": {
+            "Sesión_5": [
+                "documentos/Urb-Historia 2/Actividad_3/Sesión_5/Archivo_9.pdf"
             ]
         }
     },
