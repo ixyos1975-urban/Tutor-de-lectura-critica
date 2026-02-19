@@ -15,7 +15,7 @@ else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS (NUEVA ESTRUCTURA ACTUALIZADA)
+# 3. RUTAS DE DOCUMENTOS (ESTRUCTURA DEFINITIVA)
 CONFIG = {
     "Urb-Historia 1": {
         "Actividad_1": [
@@ -89,7 +89,14 @@ if "ultima_interaccion" not in st.session_state:
 
 # --- FASE A: LOGIN INSTITUCIONAL (@unisalle.edu.co) ---
 if not st.session_state.user_id:
-    st.title("🔐 Tutor de Análisis Crítico | Unisalle")
+    # Nuevo título centrado con salto de línea
+    st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
+    
+    # Fecha de creación y versión
+    st.markdown("<p style='text-align: center; color: gray;'><small><b>Lanzamiento Operativo:</b> Febrero 19 de 2026 | <b>Versión:</b> 1.30 (En mejora continua)</small></p>", unsafe_allow_html=True)
+    
+    st.divider()
+    
     st.markdown("""
     **Bienvenido al entorno de evaluación.**
     
