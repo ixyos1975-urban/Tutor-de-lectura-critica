@@ -15,7 +15,7 @@ else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS (ESTRUCTURA DEFINITIVA)
+# 3. RUTAS DE DOCUMENTOS (ESTRUCTURA DEFINITIVA SIN TILDES)
 CONFIG = {
     "Urb-Historia 1": {
         "Actividad_1": [
@@ -33,44 +33,44 @@ CONFIG = {
     },
     "Urb-Historia 2": {
         "Actividad_1": {
-            "Sesión_1": [
-                "documentos/Urb-Historia 2/Actividad_1/Sesión_1/Archivo_1.pdf",
-                "documentos/Urb-Historia 2/Actividad_1/Sesión_1/Archivo_2.pdf"
+            "Sesion_1": [
+                "documentos/Urb-Historia 2/Actividad_1/Sesion_1/Archivo_1.pdf",
+                "documentos/Urb-Historia 2/Actividad_1/Sesion_1/Archivo_2.pdf"
             ],
-            "Sesión_2": [
-                "documentos/Urb-Historia 2/Actividad_1/Sesión_2/Archivo_3.pdf",
-                "documentos/Urb-Historia 2/Actividad_1/Sesión_2/Archivo_4.pdf"
+            "Sesion_2": [
+                "documentos/Urb-Historia 2/Actividad_1/Sesion_2/Archivo_3.pdf",
+                "documentos/Urb-Historia 2/Actividad_1/Sesion_2/Archivo_4.pdf"
             ]
         },
         "Actividad_2": {
-            "Sesión_3": [
-                "documentos/Urb-Historia 2/Actividad_2/Sesión_3/Archivo_5.pdf",
-                "documentos/Urb-Historia 2/Actividad_2/Sesión_3/Archivo_6.pdf"
+            "Sesion_3": [
+                "documentos/Urb-Historia 2/Actividad_2/Sesion_3/Archivo_5.pdf",
+                "documentos/Urb-Historia 2/Actividad_2/Sesion_3/Archivo_6.pdf"
             ],
-            "Sesión_4": [
-                "documentos/Urb-Historia 2/Actividad_2/Sesión_4/Archivo_7.pdf",
-                "documentos/Urb-Historia 2/Actividad_2/Sesión_4/Archivo_8.pdf"
+            "Sesion_4": [
+                "documentos/Urb-Historia 2/Actividad_2/Sesion_4/Archivo_7.pdf",
+                "documentos/Urb-Historia 2/Actividad_2/Sesion_4/Archivo_8.pdf"
             ]
         },
         "Actividad_3": {
-            "Sesión_5": [
-                "documentos/Urb-Historia 2/Actividad_3/Sesión_5/Archivo_9.pdf"
+            "Sesion_5": [
+                "documentos/Urb-Historia 2/Actividad_3/Sesion_5/Archivo_9.pdf"
             ]
         }
     },
     "Arq-POT": {
         "Actividad_1": {
-            "Sesión_1": ["documentos/Arq-POT/Actividad_1/Sesión_1/Archivo_1.pdf"],
-            "Sesión_2": ["documentos/Arq-POT/Actividad_1/Sesión_2/Archivo_2.pdf"],
-            "Sesión_3": ["documentos/Arq-POT/Actividad_1/Sesión_3/Archivo_3.pdf"]
+            "Sesion_1": ["documentos/Arq-POT/Actividad_1/Sesion_1/Archivo_1.pdf"],
+            "Sesion_2": ["documentos/Arq-POT/Actividad_1/Sesion_2/Archivo_2.pdf"],
+            "Sesion_3": ["documentos/Arq-POT/Actividad_1/Sesion_3/Archivo_3.pdf"]
         },
         "Actividad_2": {
-            "Sesión_4": ["documentos/Arq-POT/Actividad_2/Sesión_4/Archivo_4.pdf"],
-            "Sesión_5": ["documentos/Arq-POT/Actividad_2/Sesión_5/Archivo_5.pdf"]
+            "Sesion_4": ["documentos/Arq-POT/Actividad_2/Sesion_4/Archivo_4.pdf"],
+            "Sesion_5": ["documentos/Arq-POT/Actividad_2/Sesion_5/Archivo_5.pdf"]
         },
         "Actividad_3": {
-            "Sesión_6": ["documentos/Arq-POT/Actividad_3/Sesión_6/Archivo_6.pdf"],
-            "Sesión_7": ["documentos/Arq-POT/Actividad_3/Sesión_7/Archivo_7.pdf"]
+            "Sesion_6": ["documentos/Arq-POT/Actividad_3/Sesion_6/Archivo_6.pdf"],
+            "Sesion_7": ["documentos/Arq-POT/Actividad_3/Sesion_7/Archivo_7.pdf"]
         }
     }
 }
