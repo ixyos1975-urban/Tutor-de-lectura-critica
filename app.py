@@ -93,7 +93,7 @@ if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     
     # Fecha de creación y versión unificada con formato numérico
-    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 1.31</b> (22/02/2026)</small></p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 1.32</b> (22/02/2026)</small></p>", unsafe_allow_html=True)
     
     st.divider()
     
@@ -255,30 +255,4 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 error_msg = str(e).lower()
                 # Detectamos si es el error 429 de cuota superada
                 if "429" in error_msg or "quota" in error_msg or "exhausted" in error_msg:
-                    st.warning("⚠️ **Alta demanda en el servidor.** El Tutor Virtual está procesando las solicitudes de muchos estudiantes al mismo tiempo. Por favor, espera aproximadamente un minuto y vuelve a intentar enviar tu mensaje.")
-                    # Eliminamos el último mensaje del usuario para que pueda volver a enviarlo sin que se duplique
-                    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-                        st.session_state.messages.pop() 
-                else:
-                    # Si es otro tipo de error, lo mostramos normalmente
-                    st.error(f"Se ha producido un error técnico: {e}")
-
-# 8. DESCARGA OFICIAL
-if st.session_state.codigo:
-    nombre_archivo_limpio = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
-    
-    reporte = f"REPORTE DE ANÁLISIS CRÍTICO - UNISALLE\n"
-    reporte += f"Estudiante: {st.session_state.user_id}\n"
-    reporte += f"Código de Validación: {st.session_state.codigo}\n"
-    reporte += "-"*50 + "\n\n"
-    for m in st.session_state.messages:
-        reporte += f"{m['role'].upper()}: {m['content']}\n\n"
-        
-    st.success("🎉 Actividad completada correctamente.")
-    
-    st.download_button(
-        label=f"📥 Descargar Evidencia ({nombre_archivo_limpio})", 
-        data=reporte, 
-        file_name=nombre_archivo_limpio,
-        mime="text/plain"
-    )
+                    st.warning("⚠️ **Alta demanda en el servidor.**
