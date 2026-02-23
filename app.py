@@ -137,13 +137,14 @@ def registrar_ingreso(correo):
             return intentos_actuales, fila
         else:
             fecha_str = now.strftime("%Y-%m-%d")
-            hoja_bd.append_row([correo, 1, fecha_str, hora_str, hora_str, "", ""])
+            # Se agrega una columna vacía al final para el Código de Validación (Columna 8/H)
+            hoja_bd.append_row([correo, 1, fecha_str, hora_str, hora_str, "", "", ""])
             nueva_fila = len(hoja_bd.get_all_values())
             return 1, nueva_fila
     except Exception as e:
         return 1, None
 
-def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None):
+def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None, codigo=None):
     if not hoja_bd or not fila: return
     try:
         if intentos is not None:
@@ -155,6 +156,8 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
             hoja_bd.update_cell(fila, 6, asignatura) # Columna F
         if actividad is not None:
             hoja_bd.update_cell(fila, 7, actividad) # Columna G
+        if codigo is not None:
+            hoja_bd.update_cell(fila, 8, codigo) # Columna H (NUEVA)
     except:
         pass
 
@@ -162,7 +165,11 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
 # --- FASE A: LOGIN INSTITUCIONAL (@unisalle.edu.co) ---
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 2.2 (Tiempos Ampliados)</b></small></p>", unsafe_allow_html=True)
+    
+    # Fecha y hora actual para control de versiones
+    now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.3 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    
     st.divider()
     
     st.markdown("""
@@ -332,6 +339,9 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     
                     st.session_state.codigo = codigo_final
                     res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
+                    
+                    # AQUÍ ESTÁ EL REGISTRO DE SEGURIDAD EN LA BASE DE DATOS
+                    actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final)
                 
                 st.markdown(res)
                 st.session_state.messages.append({"role": "assistant", "content": res})
