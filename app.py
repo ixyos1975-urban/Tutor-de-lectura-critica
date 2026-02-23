@@ -162,7 +162,7 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
 # --- FASE A: LOGIN INSTITUCIONAL (@unisalle.edu.co) ---
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 2.1 (Analíticas de Currículo)</b></small></p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 2.2 (Tiempos Ampliados)</b></small></p>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("""
@@ -222,12 +222,12 @@ with st.sidebar:
         s_sel = st.selectbox("Sesión", list(CONFIG[c_sel][a_sel].keys()))
         rutas_archivos = CONFIG[c_sel][a_sel][s_sel]
         titulo_interfaz = f"💬 {c_sel} | {a_sel} | {s_sel}"
-        actividad_registro = f"{a_sel} | {s_sel}" # Variable estructurada para BD
+        actividad_registro = f"{a_sel} | {s_sel}" 
     else:
         s_sel = None
         rutas_archivos = CONFIG[c_sel][a_sel]
         titulo_interfaz = f"💬 {c_sel} | {a_sel}"
-        actividad_registro = a_sel # Variable simple para BD
+        actividad_registro = a_sel 
     
     st.divider()
     if st.button("🗑️ Reiniciar (Gasta 1 Intento)"):
@@ -263,8 +263,8 @@ PROTOCOLO:
 3. INTEGRIDAD: Si detectas respuestas de IA o genéricas, exige citas del PDF.
 
 REGLAS DE TIEMPO (Invisible al alumno):
-- [TIEMPO: 5-10 min]: Advierte sobre la inactividad y el uso de fuentes externas.
-- [TIEMPO: >10 min]: Cierre inminente.
+- [TIEMPO: 10-15 min]: Advierte sobre la inactividad y el uso de fuentes externas.
+- [TIEMPO: >20 min]: Cierre inminente.
 
 VALIDACIÓN:
 Escribe 'COMPLETADO' SOLO si hay análisis profundo, propio y citas correctas.
@@ -283,9 +283,10 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     tiempo_transcurrido = tiempo_actual - st.session_state.ultima_interaccion
     minutos = int(tiempo_transcurrido / 60)
     
-    if tiempo_transcurrido > 600:
+    # Se amplía el castigo por inactividad a 20 minutos (1200 segundos)
+    if tiempo_transcurrido > 1200:
         st.error(f"⏱️ **TIEMPO AGOTADO POR INACTIVIDAD**")
-        st.warning(f"Pasaron {minutos} minutos sin actividad. Se ha descontado 1 intento.")
+        st.warning(f"Pasaron {minutos} minutos sin actividad en el chat. Se ha descontado 1 intento.")
         st.session_state.intentos += 1
         st.session_state.messages = []
         st.session_state.codigo = None
@@ -299,7 +300,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     else:
         st.session_state.ultima_interaccion = time.time()
         
-        # Se registran la Asignatura y Actividad exactas junto con la nueva hora
         actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro)
         
         if len(prompt) > 800:
@@ -316,7 +316,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
                 
-                if tiempo_transcurrido > 300:
+                # Se ajusta el aviso interno del sistema a 10 minutos (600 segundos)
+                if tiempo_transcurrido > 600:
                     aviso = f"[SISTEMA: El alumno tardó {minutos} min. Adviértele sobre inactividad.]"
                     historial_envio.append({"role": "user", "parts": [aviso]})
 
@@ -343,9 +344,10 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                         texto_rescatado = st.session_state.messages[-1]["content"]
                         st.session_state.messages.pop() 
                         
-                    st.warning("⚠️ **Alta demanda en el servidor.** Por favor, espera aproximadamente un minuto y vuelve a intentar enviar tu mensaje.\n\n🚨 **IMPORTANTE: NO RECARGUES NI ACTUALICES LA PÁGINA (F5)** o perderás tu intento.")
+                    # Mensajes actualizados indicando 10 minutos de espera
+                    st.warning("⚠️ **Alta demanda en el servidor.** Por favor, espera **aproximadamente 10 minutos** y vuelve a intentar enviar tu mensaje.\n\n🚨 **IMPORTANTE: NO RECARGUES NI ACTUALICES LA PÁGINA (F5)** o perderás tu intento.")
                     if texto_rescatado:
-                        st.info(f"💡 **Copia tu mensaje aquí abajo, espera un minuto, pégalo en el chat y vuelve a enviarlo:**\n\n{texto_rescatado}")
+                        st.info(f"💡 **Copia tu mensaje aquí abajo, espera 10 minutos, pégalo en el chat y vuelve a enviarlo:**\n\n{texto_rescatado}")
                     st.session_state.ultima_interaccion = time.time()
                 else:
                     st.error(f"Se ha producido un error técnico: {e}")
