@@ -3,19 +3,23 @@ import google.generativeai as genai
 import random
 import os
 import time
+import json
+import gspread
+from google.oauth2.service_account import Credentials
+from datetime import datetime, timedelta
 from PyPDF2 import PdfReader
 
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Tutor de Análisis Crítico", layout="wide")
 
-# 2. CONEXIÓN API
+# 2. CONEXIÓN API GEMINI
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS (ESTRUCTURA DEFINITIVA SIN TILDES)
+# 3. RUTAS DE DOCUMENTOS
 CONFIG = {
     "Urb-Historia 1": {
         "Actividad_1": [
@@ -80,6 +84,8 @@ if "user_id" not in st.session_state:
     st.session_state.user_id = None
 if "intentos" not in st.session_state:
     st.session_state.intentos = 1
+if "fila_bd" not in st.session_state:
+    st.session_state.fila_bd = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "codigo" not in st.session_state:
@@ -87,14 +93,76 @@ if "codigo" not in st.session_state:
 if "ultima_interaccion" not in st.session_state:
     st.session_state.ultima_interaccion = time.time()
 
+# 4.5 CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS)
+@st.cache_resource
+def init_db():
+    try:
+        cred_dict = json.loads(st.secrets["gcp_service_account"])
+        creds = Credentials.from_service_account_info(
+            cred_dict,
+            scopes=[
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive"
+            ]
+        )
+        client = gspread.authorize(creds)
+        return client.open_by_url(st.secrets["sheet_url"]).sheet1
+    except Exception as e:
+        st.error("Error conectando a la base de datos de auditoría. Revisa los Secrets.")
+        return None
+
+hoja_bd = init_db()
+
+def get_hora_colombia():
+    return datetime.utcnow() - timedelta(hours=5)
+
+def registrar_ingreso(correo):
+    if not hoja_bd: return 1, None
+    try:
+        registros = hoja_bd.get_all_records()
+        fila = None
+        intentos_actuales = 1
+        
+        for idx, row in enumerate(registros):
+            if str(row.get("Correo", "")).strip().lower() == correo:
+                fila = idx + 2 
+                intentos_actuales = int(row.get("Intentos", 1))
+                break
+        
+        now = get_hora_colombia()
+        hora_str = now.strftime("%H:%M:%S")
+        
+        if fila:
+            hoja_bd.update_cell(fila, 5, hora_str)
+            return intentos_actuales, fila
+        else:
+            fecha_str = now.strftime("%Y-%m-%d")
+            hoja_bd.append_row([correo, 1, fecha_str, hora_str, hora_str, "", ""])
+            nueva_fila = len(hoja_bd.get_all_values())
+            return 1, nueva_fila
+    except Exception as e:
+        return 1, None
+
+def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None):
+    if not hoja_bd or not fila: return
+    try:
+        if intentos is not None:
+            hoja_bd.update_cell(fila, 2, intentos) # Columna B
+        if actualizar_hora:
+            now = get_hora_colombia()
+            hoja_bd.update_cell(fila, 5, now.strftime("%H:%M:%S")) # Columna E
+        if asignatura is not None:
+            hoja_bd.update_cell(fila, 6, asignatura) # Columna F
+        if actividad is not None:
+            hoja_bd.update_cell(fila, 7, actividad) # Columna G
+    except:
+        pass
+
+
 # --- FASE A: LOGIN INSTITUCIONAL (@unisalle.edu.co) ---
 if not st.session_state.user_id:
-    # Nuevo título centrado con salto de línea
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
-    
-    # Fecha de creación y versión unificada con formato numérico
-    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 1.33</b> (22/02/2026)</small></p>", unsafe_allow_html=True)
-    
+    st.markdown("<p style='text-align: center; color: gray;'><small><b>Versión 2.1 (Analíticas de Currículo)</b></small></p>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("""
@@ -112,8 +180,16 @@ if not st.session_state.user_id:
         
         if st.button("Iniciar Sesión"):
             if email_input.endswith("@unisalle.edu.co"):
-                st.session_state.user_id = email_input.strip().lower()
-                st.session_state.ultima_interaccion = time.time()
+                correo_limpio = email_input.strip().lower()
+                
+                with st.spinner("Sincronizando base de datos institucional..."):
+                    intentos_bd, fila_bd = registrar_ingreso(correo_limpio)
+                    
+                    st.session_state.user_id = correo_limpio
+                    st.session_state.intentos = intentos_bd
+                    st.session_state.fila_bd = fila_bd
+                    st.session_state.ultima_interaccion = time.time()
+                
                 st.rerun()
             else:
                 st.error("⛔ Acceso denegado. Debes usar un correo institucional (@unisalle.edu.co).")
@@ -139,19 +215,19 @@ with st.sidebar:
     
     st.divider()
     
-    # Selectores dinámicos
     c_sel = st.selectbox("Asignatura", list(CONFIG.keys()))
     a_sel = st.selectbox("Actividad", list(CONFIG[c_sel].keys()))
     
-    # Lógica inteligente: ¿Hay sesiones o son archivos directos?
     if isinstance(CONFIG[c_sel][a_sel], dict):
         s_sel = st.selectbox("Sesión", list(CONFIG[c_sel][a_sel].keys()))
         rutas_archivos = CONFIG[c_sel][a_sel][s_sel]
         titulo_interfaz = f"💬 {c_sel} | {a_sel} | {s_sel}"
+        actividad_registro = f"{a_sel} | {s_sel}" # Variable estructurada para BD
     else:
         s_sel = None
         rutas_archivos = CONFIG[c_sel][a_sel]
         titulo_interfaz = f"💬 {c_sel} | {a_sel}"
+        actividad_registro = a_sel # Variable simple para BD
     
     st.divider()
     if st.button("🗑️ Reiniciar (Gasta 1 Intento)"):
@@ -159,6 +235,8 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.codigo = None
         st.session_state.ultima_interaccion = time.time()
+        
+        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro)
         st.rerun()
 
 # 6. CARGAR CONTEXTO
@@ -212,11 +290,17 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         st.session_state.messages = []
         st.session_state.codigo = None
         st.session_state.ultima_interaccion = time.time()
+        
+        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro)
+        
         time.sleep(3)
         st.rerun()
 
     else:
         st.session_state.ultima_interaccion = time.time()
+        
+        # Se registran la Asignatura y Actividad exactas junto con la nueva hora
+        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro)
         
         if len(prompt) > 800:
             st.toast("⚠️ Respuesta muy larga. Resume con tus palabras.", icon="🚫")
@@ -253,25 +337,17 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 
             except Exception as e:
                 error_msg = str(e).lower()
-                # Detectamos si es el error 429 de cuota superada
                 if "429" in error_msg or "quota" in error_msg or "exhausted" in error_msg:
-                    
-                    # Rescatamos el texto del estudiante antes de borrarlo de la memoria
                     texto_rescatado = ""
                     if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
                         texto_rescatado = st.session_state.messages[-1]["content"]
                         st.session_state.messages.pop() 
                         
-                    st.warning("⚠️ **Alta demanda en el servidor.** El Tutor está procesando solicitudes de varios estudiantes al mismo tiempo. Por favor, espera aproximadamente un minuto y vuelve a intentar enviar tu mensaje.\n\n🚨 **IMPORTANTE: NO RECARGUES NI ACTUALICES LA PÁGINA (F5)** o perderás tu intento y el progreso de esta conversación. Solo espera y continúa el diálogo. *(Esta espera no afecta tu tiempo límite)*.")
-                    
-                    # Le mostramos su texto para que lo copie y pegue
+                    st.warning("⚠️ **Alta demanda en el servidor.** Por favor, espera aproximadamente un minuto y vuelve a intentar enviar tu mensaje.\n\n🚨 **IMPORTANTE: NO RECARGUES NI ACTUALICES LA PÁGINA (F5)** o perderás tu intento.")
                     if texto_rescatado:
                         st.info(f"💡 **Copia tu mensaje aquí abajo, espera un minuto, pégalo en el chat y vuelve a enviarlo:**\n\n{texto_rescatado}")
-                        
-                    # Reiniciamos el reloj para que la espera obligada no los penalice por "inactividad"
                     st.session_state.ultima_interaccion = time.time()
                 else:
-                    # Si es otro tipo de error, lo mostramos normalmente
                     st.error(f"Se ha producido un error técnico: {e}")
 
 # 8. DESCARGA OFICIAL
