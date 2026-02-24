@@ -134,17 +134,18 @@ def registrar_ingreso(correo):
         
         if fila:
             hoja_bd.update_cell(fila, 5, hora_str)
+            hoja_bd.update_cell(fila, 9, "En curso") # Actualiza estado al reingresar
             return intentos_actuales, fila
         else:
             fecha_str = now.strftime("%Y-%m-%d")
-            # Se agrega una columna vacía al final para el Código de Validación (Columna 8/H)
-            hoja_bd.append_row([correo, 1, fecha_str, hora_str, hora_str, "", "", ""])
+            # Se agrega una novena columna para el Estado (Columna 9/I)
+            hoja_bd.append_row([correo, 1, fecha_str, hora_str, hora_str, "", "", "", "En curso"])
             nueva_fila = len(hoja_bd.get_all_values())
             return 1, nueva_fila
     except Exception as e:
         return 1, None
 
-def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None, codigo=None):
+def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None, codigo=None, estado=None):
     if not hoja_bd or not fila: return
     try:
         if intentos is not None:
@@ -157,7 +158,9 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
         if actividad is not None:
             hoja_bd.update_cell(fila, 7, actividad) # Columna G
         if codigo is not None:
-            hoja_bd.update_cell(fila, 8, codigo) # Columna H (NUEVA)
+            hoja_bd.update_cell(fila, 8, codigo) # Columna H
+        if estado is not None:
+            hoja_bd.update_cell(fila, 9, estado) # Columna I (ESTADO DE SESIÓN)
     except:
         pass
 
@@ -166,9 +169,8 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     
-    # Fecha y hora actual para control de versiones
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.3 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.4 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     
     st.divider()
     
@@ -243,7 +245,8 @@ with st.sidebar:
         st.session_state.codigo = None
         st.session_state.ultima_interaccion = time.time()
         
-        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro)
+        # Registra el reinicio manual en la BD
+        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Reinicio manual")
         st.rerun()
 
 # 6. CARGAR CONTEXTO
@@ -290,7 +293,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     tiempo_transcurrido = tiempo_actual - st.session_state.ultima_interaccion
     minutos = int(tiempo_transcurrido / 60)
     
-    # Se amplía el castigo por inactividad a 20 minutos (1200 segundos)
     if tiempo_transcurrido > 1200:
         st.error(f"⏱️ **TIEMPO AGOTADO POR INACTIVIDAD**")
         st.warning(f"Pasaron {minutos} minutos sin actividad en el chat. Se ha descontado 1 intento.")
@@ -299,7 +301,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         st.session_state.codigo = None
         st.session_state.ultima_interaccion = time.time()
         
-        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro)
+        # Registra el cierre por inactividad prolongada
+        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Tiempo agotado (> 20 min)")
         
         time.sleep(3)
         st.rerun()
@@ -307,7 +310,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     else:
         st.session_state.ultima_interaccion = time.time()
         
-        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro)
+        # Mantiene el estado activo en cada interacción exitosa
+        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="En curso")
         
         if len(prompt) > 800:
             st.toast("⚠️ Respuesta muy larga. Resume con tus palabras.", icon="🚫")
@@ -323,7 +327,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
                 
-                # Se ajusta el aviso interno del sistema a 10 minutos (600 segundos)
                 if tiempo_transcurrido > 600:
                     aviso = f"[SISTEMA: El alumno tardó {minutos} min. Adviértele sobre inactividad.]"
                     historial_envio.append({"role": "user", "parts": [aviso]})
@@ -340,8 +343,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     st.session_state.codigo = codigo_final
                     res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
                     
-                    # AQUÍ ESTÁ EL REGISTRO DE SEGURIDAD EN LA BASE DE DATOS
-                    actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final)
+                    # Registra el éxito definitivo en la BD
+                    actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final, estado="Completado exitosamente")
                 
                 st.markdown(res)
                 st.session_state.messages.append({"role": "assistant", "content": res})
@@ -354,7 +357,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                         texto_rescatado = st.session_state.messages[-1]["content"]
                         st.session_state.messages.pop() 
                         
-                    # Mensajes actualizados indicando 10 minutos de espera
                     st.warning("⚠️ **Alta demanda en el servidor.** Por favor, espera **aproximadamente 10 minutos** y vuelve a intentar enviar tu mensaje.\n\n🚨 **IMPORTANTE: NO RECARGUES NI ACTUALICES LA PÁGINA (F5)** o perderás tu intento.")
                     if texto_rescatado:
                         st.info(f"💡 **Copia tu mensaje aquí abajo, espera 10 minutos, pégalo en el chat y vuelve a enviarlo:**\n\n{texto_rescatado}")
