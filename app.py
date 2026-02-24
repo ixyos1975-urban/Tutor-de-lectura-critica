@@ -134,11 +134,10 @@ def registrar_ingreso(correo):
         
         if fila:
             hoja_bd.update_cell(fila, 5, hora_str)
-            hoja_bd.update_cell(fila, 9, "En curso") # Actualiza estado al reingresar
+            hoja_bd.update_cell(fila, 9, "En curso")
             return intentos_actuales, fila
         else:
             fecha_str = now.strftime("%Y-%m-%d")
-            # Se agrega una novena columna para el Estado (Columna 9/I)
             hoja_bd.append_row([correo, 1, fecha_str, hora_str, hora_str, "", "", "", "En curso"])
             nueva_fila = len(hoja_bd.get_all_values())
             return 1, nueva_fila
@@ -149,28 +148,27 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
     if not hoja_bd or not fila: return
     try:
         if intentos is not None:
-            hoja_bd.update_cell(fila, 2, intentos) # Columna B
+            hoja_bd.update_cell(fila, 2, intentos)
         if actualizar_hora:
             now = get_hora_colombia()
-            hoja_bd.update_cell(fila, 5, now.strftime("%H:%M:%S")) # Columna E
+            hoja_bd.update_cell(fila, 5, now.strftime("%H:%M:%S"))
         if asignatura is not None:
-            hoja_bd.update_cell(fila, 6, asignatura) # Columna F
+            hoja_bd.update_cell(fila, 6, asignatura)
         if actividad is not None:
-            hoja_bd.update_cell(fila, 7, actividad) # Columna G
+            hoja_bd.update_cell(fila, 7, actividad)
         if codigo is not None:
-            hoja_bd.update_cell(fila, 8, codigo) # Columna H
+            hoja_bd.update_cell(fila, 8, codigo)
         if estado is not None:
-            hoja_bd.update_cell(fila, 9, estado) # Columna I (ESTADO DE SESIÓN)
+            hoja_bd.update_cell(fila, 9, estado)
     except:
         pass
-
 
 # --- FASE A: LOGIN INSTITUCIONAL (@unisalle.edu.co) ---
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.4 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.6 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     
     st.divider()
     
@@ -245,7 +243,6 @@ with st.sidebar:
         st.session_state.codigo = None
         st.session_state.ultima_interaccion = time.time()
         
-        # Registra el reinicio manual en la BD
         actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Reinicio manual")
         st.rerun()
 
@@ -282,8 +279,11 @@ Escribe 'COMPLETADO' SOLO si hay análisis profundo, propio y citas correctas.
 
 st.title(titulo_interfaz)
 
+# BUCLE DE RENDERIZADO VISUAL DEL CHAT (MODIFICADO PARA MOSTRAR LA HORA)
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
+        if "timestamp" in m:
+            st.caption(f"🕒 {m['timestamp']}")
         st.markdown(m["content"])
 
 # 7. CHAT CON LÓGICA DE TIEMPO Y MANEJO DE ERRORES
@@ -301,7 +301,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         st.session_state.codigo = None
         st.session_state.ultima_interaccion = time.time()
         
-        # Registra el cierre por inactividad prolongada
         actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Tiempo agotado (> 20 min)")
         
         time.sleep(3)
@@ -309,15 +308,17 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
     else:
         st.session_state.ultima_interaccion = time.time()
-        
-        # Mantiene el estado activo en cada interacción exitosa
         actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="En curso")
         
         if len(prompt) > 800:
             st.toast("⚠️ Respuesta muy larga. Resume con tus palabras.", icon="🚫")
 
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        # Captura de hora exacta al momento en que el usuario envía el texto
+        timestamp_usuario = get_hora_colombia().strftime("%d/%m/%Y %H:%M:%S")
+        st.session_state.messages.append({"role": "user", "content": prompt, "timestamp": timestamp_usuario})
+        
         with st.chat_message("user"):
+            st.caption(f"🕒 {timestamp_usuario}")
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
@@ -343,11 +344,14 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     st.session_state.codigo = codigo_final
                     res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
                     
-                    # Registra el éxito definitivo en la BD
                     actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final, estado="Completado exitosamente")
                 
+                # Captura de hora exacta para la respuesta del tutor
+                timestamp_tutor = get_hora_colombia().strftime("%d/%m/%Y %H:%M:%S")
+                st.caption(f"🕒 {timestamp_tutor}")
                 st.markdown(res)
-                st.session_state.messages.append({"role": "assistant", "content": res})
+                
+                st.session_state.messages.append({"role": "assistant", "content": res, "timestamp": timestamp_tutor})
                 
             except Exception as e:
                 error_msg = str(e).lower()
@@ -364,7 +368,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 else:
                     st.error(f"Se ha producido un error técnico: {e}")
 
-# 8. DESCARGA OFICIAL
+# 8. DESCARGA OFICIAL (AHORA INCLUYE FECHAS EN EL TXT)
 if st.session_state.codigo:
     nombre_archivo_limpio = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
     
@@ -373,7 +377,8 @@ if st.session_state.codigo:
     reporte += f"Código de Validación: {st.session_state.codigo}\n"
     reporte += "-"*50 + "\n\n"
     for m in st.session_state.messages:
-        reporte += f"{m['role'].upper()}: {m['content']}\n\n"
+        sello_tiempo = f" [{m['timestamp']}] " if "timestamp" in m else " "
+        reporte += f"{m['role'].upper()}{sello_tiempo}: {m['content']}\n\n"
         
     st.success("🎉 Actividad completada correctamente.")
     
