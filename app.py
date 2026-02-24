@@ -92,6 +92,10 @@ if "codigo" not in st.session_state:
     st.session_state.codigo = None
 if "ultima_interaccion" not in st.session_state:
     st.session_state.ultima_interaccion = time.time()
+if "saturacion_activa" not in st.session_state:
+    st.session_state.saturacion_activa = False
+if "advertencias_ia" not in st.session_state:
+    st.session_state.advertencias_ia = 0
 
 # 4.5 CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS)
 @st.cache_resource
@@ -168,7 +172,7 @@ if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.6 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.8 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     
     st.divider()
     
@@ -241,6 +245,8 @@ with st.sidebar:
         st.session_state.intentos += 1
         st.session_state.messages = []
         st.session_state.codigo = None
+        st.session_state.advertencias_ia = 0
+        st.session_state.saturacion_activa = False
         st.session_state.ultima_interaccion = time.time()
         
         actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Reinicio manual")
@@ -267,11 +273,10 @@ Texto de referencia: {texto_referencia}
 PROTOCOLO:
 1. INICIO: Espera a que el alumno proponga el tema/tesis.
 2. DESARROLLO: Cuestiona sus argumentos. No des respuestas.
-3. INTEGRIDAD: Si detectas respuestas de IA o genéricas, exige citas del PDF.
+3. CONTROL DE IA (NUEVO): Si detectas que el alumno responde usando herramientas de Inteligencia Artificial (ChatGPT, Gemini, etc.), textos genéricos copiados y pegados, o falta de sustento personal, DEBES INCLUIR OBLIGATORIAMENTE al inicio de tu respuesta la etiqueta secreta: [ALERTA_IA]. Luego, indícale brevemente qué falló y recuérdale que debe usar sus propias ideas.
 
 REGLAS DE TIEMPO (Invisible al alumno):
-- [TIEMPO: 10-15 min]: Advierte sobre la inactividad y el uso de fuentes externas.
-- [TIEMPO: >20 min]: Cierre inminente.
+- [TIEMPO: 5-10 min]: Advierte sobre el uso del tiempo y recuérdale que el límite es 10 minutos.
 
 VALIDACIÓN:
 Escribe 'COMPLETADO' SOLO si hay análisis profundo, propio y citas correctas.
@@ -279,7 +284,6 @@ Escribe 'COMPLETADO' SOLO si hay análisis profundo, propio y citas correctas.
 
 st.title(titulo_interfaz)
 
-# BUCLE DE RENDERIZADO VISUAL DEL CHAT (MODIFICADO PARA MOSTRAR LA HORA)
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
         if "timestamp" in m:
@@ -293,15 +297,22 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
     tiempo_transcurrido = tiempo_actual - st.session_state.ultima_interaccion
     minutos = int(tiempo_transcurrido / 60)
     
-    if tiempo_transcurrido > 1200:
+    # Lógica de tiempos dinámicos (10 min normal / 20 min en saturación)
+    limite_expulsion = 1200 if st.session_state.saturacion_activa else 600
+    
+    if tiempo_transcurrido > limite_expulsion:
         st.error(f"⏱️ **TIEMPO AGOTADO POR INACTIVIDAD**")
         st.warning(f"Pasaron {minutos} minutos sin actividad en el chat. Se ha descontado 1 intento.")
+        
+        razon_cierre = "Tiempo agotado (> 20 min por saturación)" if st.session_state.saturacion_activa else "Tiempo agotado (> 10 min)"
+        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado=razon_cierre)
+        
         st.session_state.intentos += 1
         st.session_state.messages = []
         st.session_state.codigo = None
+        st.session_state.advertencias_ia = 0
+        st.session_state.saturacion_activa = False
         st.session_state.ultima_interaccion = time.time()
-        
-        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Tiempo agotado (> 20 min)")
         
         time.sleep(3)
         st.rerun()
@@ -313,7 +324,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         if len(prompt) > 800:
             st.toast("⚠️ Respuesta muy larga. Resume con tus palabras.", icon="🚫")
 
-        # Captura de hora exacta al momento en que el usuario envía el texto
         timestamp_usuario = get_hora_colombia().strftime("%d/%m/%Y %H:%M:%S")
         st.session_state.messages.append({"role": "user", "content": prompt, "timestamp": timestamp_usuario})
         
@@ -328,30 +338,65 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
                 
-                if tiempo_transcurrido > 600:
-                    aviso = f"[SISTEMA: El alumno tardó {minutos} min. Adviértele sobre inactividad.]"
+                # Advertencia de los 5 a 10 minutos (Solo aplica si no hay saturación)
+                if tiempo_transcurrido > 300 and not st.session_state.saturacion_activa:
+                    aviso = f"[SISTEMA: El alumno tardó {minutos} min en responder. Adviértele sobre el uso del tiempo y recuérdale que el límite estricto es de 10 minutos máximos por intervención.]"
                     historial_envio.append({"role": "user", "parts": [aviso]})
 
                 model = genai.GenerativeModel('models/gemini-flash-latest', system_instruction=PROMPT_SISTEMA)
                 response = model.generate_content(historial_envio)
                 res = response.text
-                
-                if "completado" in res.lower() and not st.session_state.codigo:
-                    rand_code = random.randint(1000, 9999)
-                    usuario_clean = st.session_state.user_id.split('@')[0].upper()
-                    codigo_final = f"[{usuario_clean}-INT{st.session_state.intentos}-{rand_code}]"
-                    
-                    st.session_state.codigo = codigo_final
-                    res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
-                    
-                    actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final, estado="Completado exitosamente")
-                
-                # Captura de hora exacta para la respuesta del tutor
                 timestamp_tutor = get_hora_colombia().strftime("%d/%m/%Y %H:%M:%S")
-                st.caption(f"🕒 {timestamp_tutor}")
-                st.markdown(res)
                 
-                st.session_state.messages.append({"role": "assistant", "content": res, "timestamp": timestamp_tutor})
+                # ----------------------------------------------------
+                # SISTEMA DE DETECCIÓN DE IA (AMARILLA Y ROJA)
+                # ----------------------------------------------------
+                if "[ALERTA_IA]" in res:
+                    st.session_state.advertencias_ia += 1
+                    
+                    if st.session_state.advertencias_ia == 1:
+                        # Primera Advertencia (Tarjeta Amarilla)
+                        res_limpia = res.replace("[ALERTA_IA]", "").strip()
+                        alerta_visual = f"⚠️ **ADVERTENCIA DEL SISTEMA (1/2)**\n\nSe ha detectado el posible uso de herramientas de Inteligencia Artificial (LLMs) o textos generados automáticamente en tu respuesta. Recuerda que el objetivo de esta actividad es desarrollar tu propio pensamiento crítico. Si reincides en esta práctica, tu intento será anulado.\n\n---\n\n{res_limpia}"
+                        
+                        st.caption(f"🕒 {timestamp_tutor}")
+                        st.markdown(alerta_visual)
+                        st.session_state.messages.append({"role": "assistant", "content": alerta_visual, "timestamp": timestamp_tutor})
+                        
+                    else:
+                        # Reincidencia: Expulsión (Tarjeta Roja)
+                        st.error("⛔ **INTENTO ANULADO POR USO DE IA**")
+                        st.warning("Persistente detección de uso de IA en el desarrollo del ejercicio por parte del usuario. Intento finalizado por infracción de normas.")
+                        
+                        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Cierre por uso de IA")
+                        
+                        st.session_state.intentos += 1
+                        st.session_state.messages = []
+                        st.session_state.codigo = None
+                        st.session_state.advertencias_ia = 0
+                        st.session_state.saturacion_activa = False
+                        st.session_state.ultima_interaccion = time.time()
+                        
+                        time.sleep(5)
+                        st.rerun()
+                # ----------------------------------------------------
+                else:
+                    # Flujo Normal: Aprobación y Respuestas
+                    st.session_state.saturacion_activa = False # Se resetea la saturación si hubo éxito
+                    
+                    if "completado" in res.lower() and not st.session_state.codigo:
+                        rand_code = random.randint(1000, 9999)
+                        usuario_clean = st.session_state.user_id.split('@')[0].upper()
+                        codigo_final = f"[{usuario_clean}-INT{st.session_state.intentos}-{rand_code}]"
+                        
+                        st.session_state.codigo = codigo_final
+                        res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
+                        
+                        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final, estado="Completado exitosamente")
+                    
+                    st.caption(f"🕒 {timestamp_tutor}")
+                    st.markdown(res)
+                    st.session_state.messages.append({"role": "assistant", "content": res, "timestamp": timestamp_tutor})
                 
             except Exception as e:
                 error_msg = str(e).lower()
@@ -361,6 +406,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                         texto_rescatado = st.session_state.messages[-1]["content"]
                         st.session_state.messages.pop() 
                         
+                    st.session_state.saturacion_activa = True # Activa el reloj de 20 minutos
+                    
                     st.warning("⚠️ **Alta demanda en el servidor.** Por favor, espera **aproximadamente 10 minutos** y vuelve a intentar enviar tu mensaje.\n\n🚨 **IMPORTANTE: NO RECARGUES NI ACTUALICES LA PÁGINA (F5)** o perderás tu intento.")
                     if texto_rescatado:
                         st.info(f"💡 **Copia tu mensaje aquí abajo, espera 10 minutos, pégalo en el chat y vuelve a enviarlo:**\n\n{texto_rescatado}")
@@ -368,7 +415,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 else:
                     st.error(f"Se ha producido un error técnico: {e}")
 
-# 8. DESCARGA OFICIAL (AHORA INCLUYE FECHAS EN EL TXT)
+# 8. DESCARGA OFICIAL
 if st.session_state.codigo:
     nombre_archivo_limpio = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
     
