@@ -19,7 +19,7 @@ else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS (NUEVA ESTRUCTURA CON OPCIONES)
+# 3. RUTAS DE DOCUMENTOS 
 CONFIG = {
     "Urb-Historia 1": {
         "Actividad_1": {
@@ -79,40 +79,29 @@ CONFIG = {
     }
 }
 
-# 4. GESTIÓN DE ESTADO (MEMORIA DE LA APP)
-if "user_id" not in st.session_state:
-    st.session_state.user_id = None
-if "intentos" not in st.session_state:
-    st.session_state.intentos = 1
-if "fila_bd" not in st.session_state:
-    st.session_state.fila_bd = None
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "codigo" not in st.session_state:
-    st.session_state.codigo = None
-if "ultima_interaccion" not in st.session_state:
-    st.session_state.ultima_interaccion = time.time()
-if "saturacion_activa" not in st.session_state:
-    st.session_state.saturacion_activa = False
-if "advertencias_ia" not in st.session_state:
-    st.session_state.advertencias_ia = 0
+# 4. GESTIÓN DE ESTADO
+if "user_id" not in st.session_state: st.session_state.user_id = None
+if "intentos" not in st.session_state: st.session_state.intentos = 1
+if "fila_bd" not in st.session_state: st.session_state.fila_bd = None
+if "messages" not in st.session_state: st.session_state.messages = []
+if "codigo" not in st.session_state: st.session_state.codigo = None
+if "ultima_interaccion" not in st.session_state: st.session_state.ultima_interaccion = time.time()
+if "saturacion_activa" not in st.session_state: st.session_state.saturacion_activa = False
+if "advertencias_ia" not in st.session_state: st.session_state.advertencias_ia = 0
 
-# 4.5 CONEXIÓN A LA BASE DE DATOS (GOOGLE SHEETS)
+# 4.5 CONEXIÓN A LA BASE DE DATOS
 @st.cache_resource
 def init_db():
     try:
         cred_dict = json.loads(st.secrets["gcp_service_account"])
         creds = Credentials.from_service_account_info(
             cred_dict,
-            scopes=[
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive"
-            ]
+            scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         )
         client = gspread.authorize(creds)
         return client.open_by_url(st.secrets["sheet_url"]).sheet1
     except Exception as e:
-        st.error("Error conectando a la base de datos de auditoría. Revisa los Secrets.")
+        st.error("Error conectando a la base de datos. Revisa los Secrets.")
         return None
 
 hoja_bd = init_db()
@@ -143,44 +132,38 @@ def registrar_ingreso(correo):
             hoja_bd.update_cell(fila, 11, "En curso") 
             return intentos_actuales, fila
         else:
-            hoja_bd.append_row([correo, 1, fecha_str, hora_str, fecha_str, hora_str, "", "", "", "", "En curso"])
+            hoja_bd.append_row([correo, 1, fecha_str, hora_str, fecha_str, hora_str, "", "", "", "", "En curso", "", ""])
             nueva_fila = len(hoja_bd.get_all_values())
             return 1, nueva_fila
     except Exception as e:
         return 1, None
 
-def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None, codigo=None, estado=None):
+def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None, codigo=None, estado=None, nota=None, feedback=None):
     if not hoja_bd or not fila: return
     try:
-        if intentos is not None:
-            hoja_bd.update_cell(fila, 2, intentos) 
+        if intentos is not None: hoja_bd.update_cell(fila, 2, intentos) 
         if actualizar_hora:
             now = get_hora_colombia()
             hoja_bd.update_cell(fila, 5, now.strftime("%Y-%m-%d")) 
             hoja_bd.update_cell(fila, 6, now.strftime("%H:%M:%S")) 
-        if asignatura is not None:
-            hoja_bd.update_cell(fila, 8, asignatura) 
-        if actividad is not None:
-            hoja_bd.update_cell(fila, 9, actividad) 
-        if codigo is not None:
-            hoja_bd.update_cell(fila, 10, codigo) 
-        if estado is not None:
-            hoja_bd.update_cell(fila, 11, estado) 
+        if asignatura is not None: hoja_bd.update_cell(fila, 8, asignatura) 
+        if actividad is not None: hoja_bd.update_cell(fila, 9, actividad) 
+        if codigo is not None: hoja_bd.update_cell(fila, 10, codigo) 
+        if estado is not None: hoja_bd.update_cell(fila, 11, estado) 
+        if nota is not None: hoja_bd.update_cell(fila, 12, nota) 
+        if feedback is not None: hoja_bd.update_cell(fila, 13, feedback) 
     except:
         pass
 
 # --- FASE A: LOGIN INSTITUCIONAL ---
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
-    
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 3.0 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
-    
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 4.1 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("""
     **Bienvenido al entorno de evaluación.**
-    
     Para ingresar, utiliza tu **Correo Institucional**.
     - El sistema validará automáticamente el dominio `@unisalle.edu.co`.
     - Tienes **3 intentos** para lograr el objetivo de análisis.
@@ -190,19 +173,15 @@ if not st.session_state.user_id:
     col1, col2 = st.columns([1, 2])
     with col1:
         email_input = st.text_input("Correo Electrónico:", placeholder="usuario@unisalle.edu.co")
-        
         if st.button("Iniciar Sesión"):
             if email_input.endswith("@unisalle.edu.co"):
                 correo_limpio = email_input.strip().lower()
-                
                 with st.spinner("Sincronizando base de datos institucional..."):
                     intentos_bd, fila_bd = registrar_ingreso(correo_limpio)
-                    
                     st.session_state.user_id = correo_limpio
                     st.session_state.intentos = intentos_bd
                     st.session_state.fila_bd = fila_bd
                     st.session_state.ultima_interaccion = time.time()
-                
                 st.rerun()
             else:
                 st.error("⛔ Acceso denegado. Debes usar un correo institucional (@unisalle.edu.co).")
@@ -218,36 +197,29 @@ if st.session_state.intentos > MAX_INTENTOS:
         st.rerun()
     st.stop()
 
-# 5. MENÚ LATERAL DINÁMICO E INTELIGENTE
+# 5. MENÚ LATERAL DINÁMICO
 with st.sidebar:
     usuario_corto = st.session_state.user_id.split('@')[0]
     st.title(f"👤 {usuario_corto}")
-    
     progreso = st.session_state.intentos / MAX_INTENTOS
     st.progress(progreso, text=f"Intento {st.session_state.intentos} de {MAX_INTENTOS}")
-    
     st.divider()
     
     c_sel = st.selectbox("Asignatura", list(CONFIG.keys()))
     a_sel = st.selectbox("Actividad", list(CONFIG[c_sel].keys()))
-    
     nivel_3 = CONFIG[c_sel][a_sel]
     primer_key = list(nivel_3.keys())[0]
     
-    # Detección de ruta: Si el valor de la primera llave es un diccionario, hay Sesiones.
     if isinstance(nivel_3[primer_key], dict): 
         s_sel = st.selectbox("Sesión", list(nivel_3.keys()))
         opciones = nivel_3[s_sel]
         o_sel = st.selectbox("Opción de Lectura", list(opciones.keys()))
-        
         rutas_archivos = opciones[o_sel]
         titulo_interfaz = f"💬 {c_sel} | {a_sel} | {s_sel} | {o_sel}"
         actividad_registro = f"{a_sel} | {s_sel} | {o_sel}" 
     else:
-        # Ruta directa: De Actividad salta a las Opciones
         s_sel = None
         o_sel = st.selectbox("Opción de Lectura", list(nivel_3.keys()))
-        
         rutas_archivos = nivel_3[o_sel]
         titulo_interfaz = f"💬 {c_sel} | {a_sel} | {o_sel}"
         actividad_registro = f"{a_sel} | {o_sel}" 
@@ -260,7 +232,6 @@ with st.sidebar:
         st.session_state.advertencias_ia = 0
         st.session_state.saturacion_activa = False
         st.session_state.ultima_interaccion = time.time()
-        
         actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Reinicio manual")
         st.rerun()
 
@@ -285,10 +256,10 @@ Texto de referencia: {texto_referencia}
 PROTOCOLO:
 1. INICIO: Espera a que el alumno proponga el tema/tesis.
 2. DESARROLLO: Cuestiona sus argumentos. No des respuestas.
-3. CONTROL DE IA: Si detectas que el alumno responde usando herramientas de Inteligencia Artificial (ChatGPT, Gemini, etc.), textos genéricos copiados y pegados, o falta de sustento personal, DEBES INCLUIR OBLIGATORIAMENTE al inicio de tu respuesta la etiqueta secreta: [ALERTA_IA]. Luego, indícale brevemente qué falló y recuérdale que debe usar sus propias ideas.
+3. CONTROL DE IA: Si detectas que el alumno responde usando herramientas de Inteligencia Artificial, textos genéricos, o falta de sustento personal, DEBES INCLUIR OBLIGATORIAMENTE al inicio de tu respuesta: [ALERTA_IA]. Luego, indícale qué falló y recuérdale que debe usar sus propias ideas.
 
-REGLAS DE TIEMPO (Invisible al alumno):
-- [TIEMPO: 5-10 min]: Advierte sobre el uso del tiempo y recuérdale que el límite es 10 minutos.
+REGLAS DE TIEMPO:
+- [TIEMPO: 5-10 min]: Advierte sobre el uso del tiempo.
 
 VALIDACIÓN:
 Escribe 'COMPLETADO' SOLO si hay análisis profundo, propio y citas correctas.
@@ -298,24 +269,20 @@ st.title(titulo_interfaz)
 
 for m in st.session_state.messages:
     with st.chat_message(m["role"]):
-        if "timestamp" in m:
-            st.caption(f"🕒 {m['timestamp']}")
+        if "timestamp" in m: st.caption(f"🕒 {m['timestamp']}")
         st.markdown(m["content"])
 
-# 7. CHAT CON LÓGICA DE TIEMPO Y MANEJO DE ERRORES
+# 7. CHAT Y LÓGICA DE EVALUACIÓN
 if prompt := st.chat_input("Escribe tu análisis aquí..."):
-    
     tiempo_actual = time.time()
     tiempo_transcurrido = tiempo_actual - st.session_state.ultima_interaccion
     minutos = int(tiempo_transcurrido / 60)
-    
     limite_expulsion = 1200 if st.session_state.saturacion_activa else 600
     
     if tiempo_transcurrido > limite_expulsion:
         st.error(f"⏱️ **TIEMPO AGOTADO POR INACTIVIDAD**")
         st.warning(f"Pasaron {minutos} minutos sin actividad en el chat. Se ha descontado 1 intento.")
-        
-        razon_cierre = "Tiempo agotado (> 20 min por saturación)" if st.session_state.saturacion_activa else "Tiempo agotado (> 10 min)"
+        razon_cierre = "Tiempo agotado (> 20 min)" if st.session_state.saturacion_activa else "Tiempo agotado (> 10 min)"
         actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado=razon_cierre)
         
         st.session_state.intentos += 1
@@ -324,10 +291,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         st.session_state.advertencias_ia = 0
         st.session_state.saturacion_activa = False
         st.session_state.ultima_interaccion = time.time()
-        
         time.sleep(3)
         st.rerun()
-
     else:
         st.session_state.ultima_interaccion = time.time()
         actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="En curso")
@@ -360,42 +325,73 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 
                 if "[ALERTA_IA]" in res:
                     st.session_state.advertencias_ia += 1
-                    
                     if st.session_state.advertencias_ia == 1:
                         res_limpia = res.replace("[ALERTA_IA]", "").strip()
-                        alerta_visual = f"⚠️ **ADVERTENCIA DEL SISTEMA (1/2)**\n\nSe ha detectado el posible uso de herramientas de Inteligencia Artificial (LLMs) o textos generados automáticamente en tu respuesta. Recuerda que el objetivo de esta actividad es desarrollar tu propio pensamiento crítico. Si reincides en esta práctica, tu intento será anulado.\n\n---\n\n{res_limpia}"
-                        
+                        alerta_visual = f"⚠️ **ADVERTENCIA DEL SISTEMA (1/2)**\n\nSe ha detectado el posible uso de herramientas automatizadas. Recuerda usar tu propio análisis. Si reincides, tu intento será anulado.\n\n---\n\n{res_limpia}"
                         st.caption(f"🕒 {timestamp_tutor}")
                         st.markdown(alerta_visual)
                         st.session_state.messages.append({"role": "assistant", "content": alerta_visual, "timestamp": timestamp_tutor})
-                        
                     else:
                         st.error("⛔ **INTENTO ANULADO POR USO DE IA**")
-                        st.warning("Persistente detección de uso de IA en el desarrollo del ejercicio por parte del usuario. Intento finalizado por infracción de normas.")
-                        
                         actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Cierre por uso de IA")
-                        
                         st.session_state.intentos += 1
                         st.session_state.messages = []
                         st.session_state.codigo = None
                         st.session_state.advertencias_ia = 0
                         st.session_state.saturacion_activa = False
                         st.session_state.ultima_interaccion = time.time()
-                        
                         time.sleep(5)
                         st.rerun()
                 else:
                     st.session_state.saturacion_activa = False 
                     
+                    # --- LÓGICA DE AUTOEVALUACIÓN PORCENTUAL Y FEEDBACK EN BULLETS ---
                     if "completado" in res.lower() and not st.session_state.codigo:
                         rand_code = random.randint(1000, 9999)
                         usuario_clean = st.session_state.user_id.split('@')[0].upper()
                         codigo_final = f"[{usuario_clean}-INT{st.session_state.intentos}-{rand_code}]"
-                        
                         st.session_state.codigo = codigo_final
-                        res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
                         
-                        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final, estado="Completado exitosamente")
+                        with st.spinner("Generando reporte de validación y cerrando sesión académica..."):
+                            transcripcion_completa = ""
+                            for msj in st.session_state.messages:
+                                transcripcion_completa += f"{msj['role'].upper()}: {msj['content']}\n\n"
+                            transcripcion_completa += f"TUTOR: {res}"
+
+                            prompt_evaluacion = f"""
+                            Eres un jurado académico estricto. Evalúa el debate transcrito usando números enteros de 1 a 5 para cada criterio (1=Pobre, 2=Regular, 3=Bueno, 4=Sobresaliente, 5=Excelente).
+
+                            CRITERIOS Y PESOS:
+                            1. Enfoque claro y crítico (20%): Propone un enfoque claro del tema desde el inicio.
+                            2. Sustentación (30%): Sustenta afirmaciones de manera sólida usando referencias precisas del curso.
+                            3. Pensamiento crítico y originalidad (30%): Evidencia originalidad e integridad sin depender de IA o generalidades.
+                            4. Proceso fluido (20%): Asigna siempre 5 en este criterio, ya que el estudiante logró la meta y obtuvo el código.
+
+                            INSTRUCCIÓN MATEMÁTICA:
+                            Calcula la nota ponderada final multiplicando la calificación de cada criterio por su porcentaje respectivo, y luego suma los resultados. (La nota máxima posible es 5.0).
+
+                            INSTRUCCIÓN CUALITATIVA:
+                            Escribe una retroalimentación detallada estructurada ÚNICAMENTE con viñetas (- ). Por cada uno de los primeros 3 criterios, incluye un bullet indicando el nivel de desempeño alcanzado y las acciones de mejora que debe asumir el estudiante. Sé directo y preciso. Usa saltos de línea (\\n) entre viñetas.
+
+                            TRANSCRIPCIÓN:
+                            {transcripcion_completa}
+
+                            Devuelve ÚNICAMENTE un objeto JSON válido con este formato:
+                            {{"nota_final": 4.2, "retroalimentacion": "- Enfoque (Nivel Bueno): ... \\n- Sustentación (Nivel Sobresaliente): ... \\n- Acción de mejora: ... "}}
+                            """
+                            
+                            try:
+                                eval_model = genai.GenerativeModel('models/gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+                                eval_response = eval_model.generate_content(prompt_evaluacion)
+                                data_eval = json.loads(eval_response.text)
+                                nota_db = data_eval.get("nota_final", 0)
+                                feedback_db = data_eval.get("retroalimentacion", "Evaluación completada.")
+                            except Exception as e:
+                                nota_db = "Pendiente"
+                                feedback_db = "Error al procesar evaluación cualitativa."
+
+                        res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
+                        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final, estado="Completado exitosamente", nota=nota_db, feedback=feedback_db)
                     
                     st.caption(f"🕒 {timestamp_tutor}")
                     st.markdown(res)
@@ -408,33 +404,19 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
                         texto_rescatado = st.session_state.messages[-1]["content"]
                         st.session_state.messages.pop() 
-                        
                     st.session_state.saturacion_activa = True 
-                    
-                    st.warning("⚠️ **Alta demanda en el servidor.** Por favor, espera **aproximadamente 10 minutos** y vuelve a intentar enviar tu mensaje.\n\n🚨 **IMPORTANTE: NO RECARGUES NI ACTUALICES LA PÁGINA (F5)** o perderás tu intento.")
-                    if texto_rescatado:
-                        st.info(f"💡 **Copia tu mensaje aquí abajo, espera 10 minutos, pégalo en el chat y vuelve a enviarlo:**\n\n{texto_rescatado}")
+                    st.warning("⚠️ **Alta demanda en el servidor.** Espera 10 minutos y vuelve a enviar el mensaje.")
+                    if texto_rescatado: st.info(f"💡 Copia y pega esto después:\n\n{texto_rescatado}")
                     st.session_state.ultima_interaccion = time.time()
                 else:
-                    st.error(f"Se ha producido un error técnico: {e}")
+                    st.error(f"Error técnico: {e}")
 
 # 8. DESCARGA OFICIAL
 if st.session_state.codigo:
-    nombre_archivo_limpio = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
-    
-    reporte = f"REPORTE DE ANÁLISIS CRÍTICO - UNISALLE\n"
-    reporte += f"Estudiante: {st.session_state.user_id}\n"
-    reporte += f"Código de Validación: {st.session_state.codigo}\n"
-    reporte += "-"*50 + "\n\n"
+    nombre_archivo = st.session_state.codigo.replace("[", "").replace("]", "") + ".txt"
+    reporte = f"REPORTE DE ANÁLISIS CRÍTICO - UNISALLE\nEstudiante: {st.session_state.user_id}\nCódigo: {st.session_state.codigo}\n" + "-"*50 + "\n\n"
     for m in st.session_state.messages:
         sello_tiempo = f" [{m['timestamp']}] " if "timestamp" in m else " "
         reporte += f"{m['role'].upper()}{sello_tiempo}: {m['content']}\n\n"
-        
     st.success("🎉 Actividad completada correctamente.")
-    
-    st.download_button(
-        label=f"📥 Descargar Evidencia ({nombre_archivo_limpio})", 
-        data=reporte, 
-        file_name=nombre_archivo_limpio,
-        mime="text/plain"
-    )
+    st.download_button(label=f"📥 Descargar Evidencia ({nombre_archivo})", data=reporte, file_name=nombre_archivo, mime="text/plain")
