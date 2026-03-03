@@ -19,62 +19,62 @@ else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
 
-# 3. RUTAS DE DOCUMENTOS
+# 3. RUTAS DE DOCUMENTOS (NUEVA ESTRUCTURA CON OPCIONES)
 CONFIG = {
     "Urb-Historia 1": {
-        "Actividad_1": [
-            "documentos/Urb-Historia 1/Actividad_1/Archivo_1.pdf",
-            "documentos/Urb-Historia 1/Actividad_1/Archivo_2.pdf",
-            "documentos/Urb-Historia 1/Actividad_1/Archivo_3.pdf"
-        ],
-        "Actividad_2": [
-            "documentos/Urb-Historia 1/Actividad_2/Archivo_4.pdf",
-            "documentos/Urb-Historia 1/Actividad_2/Archivo_5.pdf"
-        ],
-        "Actividad_3": [
-            "documentos/Urb-Historia 1/Actividad_3/Archivo_6.pdf"
-        ]
+        "Actividad_1": {
+            "Opción 1": ["documentos/Urb-Historia 1/Actividad_1/Archivo_1.pdf"],
+            "Opción 2": ["documentos/Urb-Historia 1/Actividad_1/Archivo_2.pdf"],
+            "Opción 3": ["documentos/Urb-Historia 1/Actividad_1/Archivo_3.pdf"]
+        },
+        "Actividad_2": {
+            "Opción 1": ["documentos/Urb-Historia 1/Actividad_2/Archivo_4.pdf"],
+            "Opción 2": ["documentos/Urb-Historia 1/Actividad_2/Archivo_5.pdf"]
+        },
+        "Actividad_3": {
+            "Opción Única": ["documentos/Urb-Historia 1/Actividad_3/Archivo_6.pdf"]
+        }
     },
     "Urb-Historia 2": {
         "Actividad_1": {
-            "Sesion_1": [
-                "documentos/Urb-Historia 2/Actividad_1/Sesion_1/Archivo_1.pdf",
-                "documentos/Urb-Historia 2/Actividad_1/Sesion_1/Archivo_2.pdf"
-            ],
-            "Sesion_2": [
-                "documentos/Urb-Historia 2/Actividad_1/Sesion_2/Archivo_3.pdf",
-                "documentos/Urb-Historia 2/Actividad_1/Sesion_2/Archivo_4.pdf"
-            ]
+            "Sesion_1": {
+                "Opción 1": ["documentos/Urb-Historia 2/Actividad_1/Sesion_1/Archivo_1.pdf"],
+                "Opción 2": ["documentos/Urb-Historia 2/Actividad_1/Sesion_1/Archivo_2.pdf"]
+            },
+            "Sesion_2": {
+                "Opción 1": ["documentos/Urb-Historia 2/Actividad_1/Sesion_2/Archivo_3.pdf"],
+                "Opción 2": ["documentos/Urb-Historia 2/Actividad_1/Sesion_2/Archivo_4.pdf"]
+            }
         },
         "Actividad_2": {
-            "Sesion_3": [
-                "documentos/Urb-Historia 2/Actividad_2/Sesion_3/Archivo_5.pdf",
-                "documentos/Urb-Historia 2/Actividad_2/Sesion_3/Archivo_6.pdf"
-            ],
-            "Sesion_4": [
-                "documentos/Urb-Historia 2/Actividad_2/Sesion_4/Archivo_7.pdf",
-                "documentos/Urb-Historia 2/Actividad_2/Sesion_4/Archivo_8.pdf"
-            ]
+            "Sesion_3": {
+                "Opción 1": ["documentos/Urb-Historia 2/Actividad_2/Sesion_3/Archivo_5.pdf"],
+                "Opción 2": ["documentos/Urb-Historia 2/Actividad_2/Sesion_3/Archivo_6.pdf"]
+            },
+            "Sesion_4": {
+                "Opción 1": ["documentos/Urb-Historia 2/Actividad_2/Sesion_4/Archivo_7.pdf"],
+                "Opción 2": ["documentos/Urb-Historia 2/Actividad_2/Sesion_4/Archivo_8.pdf"]
+            }
         },
         "Actividad_3": {
-            "Sesion_5": [
-                "documentos/Urb-Historia 2/Actividad_3/Sesion_5/Archivo_9.pdf"
-            ]
+            "Sesion_5": {
+                "Opción Única": ["documentos/Urb-Historia 2/Actividad_3/Sesion_5/Archivo_9.pdf"]
+            }
         }
     },
     "Arq-POT": {
         "Actividad_1": {
-            "Sesion_1": ["documentos/Arq-POT/Actividad_1/Sesion_1/Archivo_1.pdf"],
-            "Sesion_2": ["documentos/Arq-POT/Actividad_1/Sesion_2/Archivo_2.pdf"],
-            "Sesion_3": ["documentos/Arq-POT/Actividad_1/Sesion_3/Archivo_3.pdf"]
+            "Sesion_1": {"Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_1/Archivo_1.pdf"]},
+            "Sesion_2": {"Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_2/Archivo_2.pdf"]},
+            "Sesion_3": {"Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_3/Archivo_3.pdf"]}
         },
         "Actividad_2": {
-            "Sesion_4": ["documentos/Arq-POT/Actividad_2/Sesion_4/Archivo_4.pdf"],
-            "Sesion_5": ["documentos/Arq-POT/Actividad_2/Sesion_5/Archivo_5.pdf"]
+            "Sesion_4": {"Opción Única": ["documentos/Arq-POT/Actividad_2/Sesion_4/Archivo_4.pdf"]},
+            "Sesion_5": {"Opción Única": ["documentos/Arq-POT/Actividad_2/Sesion_5/Archivo_5.pdf"]}
         },
         "Actividad_3": {
-            "Sesion_6": ["documentos/Arq-POT/Actividad_3/Sesion_6/Archivo_6.pdf"],
-            "Sesion_7": ["documentos/Arq-POT/Actividad_3/Sesion_7/Archivo_7.pdf"]
+            "Sesion_6": {"Opción Única": ["documentos/Arq-POT/Actividad_3/Sesion_6/Archivo_6.pdf"]},
+            "Sesion_7": {"Opción Única": ["documentos/Arq-POT/Actividad_3/Sesion_7/Archivo_7.pdf"]}
         }
     }
 }
@@ -138,12 +138,11 @@ def registrar_ingreso(correo):
         fecha_str = now.strftime("%Y-%m-%d")
         
         if fila:
-            hoja_bd.update_cell(fila, 5, fecha_str)   # Columna E: Fecha de Cierre
-            hoja_bd.update_cell(fila, 6, hora_str)    # Columna F: Hora de Cierre
-            hoja_bd.update_cell(fila, 11, "En curso") # Columna K: Estado
+            hoja_bd.update_cell(fila, 5, fecha_str)   
+            hoja_bd.update_cell(fila, 6, hora_str)    
+            hoja_bd.update_cell(fila, 11, "En curso") 
             return intentos_actuales, fila
         else:
-            # Lista de 11 elementos exactos: A(Correo), B(Intento), C(Fecha_Ing), D(Hora_Ing), E(Fecha_Cierre), F(Hora_Cierre), G(Tiempo), H(Asig), I(Activ), J(Cod), K(Estado)
             hoja_bd.append_row([correo, 1, fecha_str, hora_str, fecha_str, hora_str, "", "", "", "", "En curso"])
             nueva_fila = len(hoja_bd.get_all_values())
             return 1, nueva_fila
@@ -154,28 +153,28 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
     if not hoja_bd or not fila: return
     try:
         if intentos is not None:
-            hoja_bd.update_cell(fila, 2, intentos) # Columna B
+            hoja_bd.update_cell(fila, 2, intentos) 
         if actualizar_hora:
             now = get_hora_colombia()
-            hoja_bd.update_cell(fila, 5, now.strftime("%Y-%m-%d")) # Columna E: Fecha Cierre
-            hoja_bd.update_cell(fila, 6, now.strftime("%H:%M:%S")) # Columna F: Hora Cierre
+            hoja_bd.update_cell(fila, 5, now.strftime("%Y-%m-%d")) 
+            hoja_bd.update_cell(fila, 6, now.strftime("%H:%M:%S")) 
         if asignatura is not None:
-            hoja_bd.update_cell(fila, 8, asignatura) # Columna H
+            hoja_bd.update_cell(fila, 8, asignatura) 
         if actividad is not None:
-            hoja_bd.update_cell(fila, 9, actividad) # Columna I
+            hoja_bd.update_cell(fila, 9, actividad) 
         if codigo is not None:
-            hoja_bd.update_cell(fila, 10, codigo) # Columna J
+            hoja_bd.update_cell(fila, 10, codigo) 
         if estado is not None:
-            hoja_bd.update_cell(fila, 11, estado) # Columna K
+            hoja_bd.update_cell(fila, 11, estado) 
     except:
         pass
 
-# --- FASE A: LOGIN INSTITUCIONAL (@unisalle.edu.co) ---
+# --- FASE A: LOGIN INSTITUCIONAL ---
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 2.9 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 3.0 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     
     st.divider()
     
@@ -219,7 +218,7 @@ if st.session_state.intentos > MAX_INTENTOS:
         st.rerun()
     st.stop()
 
-# 5. MENÚ LATERAL DINÁMICO
+# 5. MENÚ LATERAL DINÁMICO E INTELIGENTE
 with st.sidebar:
     usuario_corto = st.session_state.user_id.split('@')[0]
     st.title(f"👤 {usuario_corto}")
@@ -232,16 +231,26 @@ with st.sidebar:
     c_sel = st.selectbox("Asignatura", list(CONFIG.keys()))
     a_sel = st.selectbox("Actividad", list(CONFIG[c_sel].keys()))
     
-    if isinstance(CONFIG[c_sel][a_sel], dict):
-        s_sel = st.selectbox("Sesión", list(CONFIG[c_sel][a_sel].keys()))
-        rutas_archivos = CONFIG[c_sel][a_sel][s_sel]
-        titulo_interfaz = f"💬 {c_sel} | {a_sel} | {s_sel}"
-        actividad_registro = f"{a_sel} | {s_sel}" 
+    nivel_3 = CONFIG[c_sel][a_sel]
+    primer_key = list(nivel_3.keys())[0]
+    
+    # Detección de ruta: Si el valor de la primera llave es un diccionario, hay Sesiones.
+    if isinstance(nivel_3[primer_key], dict): 
+        s_sel = st.selectbox("Sesión", list(nivel_3.keys()))
+        opciones = nivel_3[s_sel]
+        o_sel = st.selectbox("Opción de Lectura", list(opciones.keys()))
+        
+        rutas_archivos = opciones[o_sel]
+        titulo_interfaz = f"💬 {c_sel} | {a_sel} | {s_sel} | {o_sel}"
+        actividad_registro = f"{a_sel} | {s_sel} | {o_sel}" 
     else:
+        # Ruta directa: De Actividad salta a las Opciones
         s_sel = None
-        rutas_archivos = CONFIG[c_sel][a_sel]
-        titulo_interfaz = f"💬 {c_sel} | {a_sel}"
-        actividad_registro = a_sel 
+        o_sel = st.selectbox("Opción de Lectura", list(nivel_3.keys()))
+        
+        rutas_archivos = nivel_3[o_sel]
+        titulo_interfaz = f"💬 {c_sel} | {a_sel} | {o_sel}"
+        actividad_registro = f"{a_sel} | {o_sel}" 
     
     st.divider()
     if st.button("🗑️ Reiniciar (Gasta 1 Intento)"):
