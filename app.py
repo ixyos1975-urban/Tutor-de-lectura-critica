@@ -79,8 +79,9 @@ CONFIG = {
     }
 }
 
-# 4. GESTIÓN DE ESTADO
+# 4. GESTIÓN DE ESTADO (AQUÍ ESTÁ EL AJUSTE CLAVE)
 if "user_id" not in st.session_state: st.session_state.user_id = None
+if "actividad_actual" not in st.session_state: st.session_state.actividad_actual = None
 if "intentos" not in st.session_state: st.session_state.intentos = 1
 if "fila_bd" not in st.session_state: st.session_state.fila_bd = None
 if "messages" not in st.session_state: st.session_state.messages = []
@@ -109,36 +110,28 @@ hoja_bd = init_db()
 def get_hora_colombia():
     return datetime.utcnow() - timedelta(hours=5)
 
-def registrar_ingreso(correo):
+# NUEVA LÓGICA: Busca o crea un registro POR ACTIVIDAD, no solo por correo.
+def obtener_o_crear_registro(correo, asignatura, actividad):
     if not hoja_bd: return 1, None
     try:
         registros = hoja_bd.get_all_records()
-        fila = None
-        intentos_actuales = 1
-        
         for idx, row in enumerate(registros):
-            if str(row.get("Correo", "")).strip().lower() == correo:
-                fila = idx + 2 
-                intentos_actuales = int(row.get("Intentos", 1))
-                break
+            # Comprueba si ya existe esta combinación exacta
+            if (str(row.get("Correo", "")).strip().lower() == correo and 
+                str(row.get("Asignatura", "")).strip() == asignatura and 
+                str(row.get("Actividad", "")).strip() == actividad):
+                return int(row.get("Intentos", 1)), idx + 2
         
+        # Si no existe, crea una nueva fila con 3 intentos frescos para esta actividad
         now = get_hora_colombia()
-        hora_str = now.strftime("%H:%M:%S")
         fecha_str = now.strftime("%Y-%m-%d")
-        
-        if fila:
-            hoja_bd.update_cell(fila, 5, fecha_str)   
-            hoja_bd.update_cell(fila, 6, hora_str)    
-            hoja_bd.update_cell(fila, 11, "En curso") 
-            return intentos_actuales, fila
-        else:
-            hoja_bd.append_row([correo, 1, fecha_str, hora_str, fecha_str, hora_str, "", "", "", "", "En curso", "", ""])
-            nueva_fila = len(hoja_bd.get_all_values())
-            return 1, nueva_fila
+        hora_str = now.strftime("%H:%M:%S")
+        hoja_bd.append_row([correo, 1, fecha_str, hora_str, fecha_str, hora_str, "", asignatura, actividad, "", "En curso", "", ""])
+        return 1, len(hoja_bd.get_all_values())
     except Exception as e:
         return 1, None
 
-def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, actividad=None, codigo=None, estado=None, nota=None, feedback=None):
+def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estado=None, nota=None, feedback=None):
     if not hoja_bd or not fila: return
     try:
         if intentos is not None: hoja_bd.update_cell(fila, 2, intentos) 
@@ -146,8 +139,6 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
             now = get_hora_colombia()
             hoja_bd.update_cell(fila, 5, now.strftime("%Y-%m-%d")) 
             hoja_bd.update_cell(fila, 6, now.strftime("%H:%M:%S")) 
-        if asignatura is not None: hoja_bd.update_cell(fila, 8, asignatura) 
-        if actividad is not None: hoja_bd.update_cell(fila, 9, actividad) 
         if codigo is not None: hoja_bd.update_cell(fila, 10, codigo) 
         if estado is not None: hoja_bd.update_cell(fila, 11, estado) 
         if nota is not None: hoja_bd.update_cell(fila, 12, nota) 
@@ -159,14 +150,14 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, asignatura=None, a
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 4.1 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 4.2 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("""
     **Bienvenido al entorno de evaluación.**
     Para ingresar, utiliza tu **Correo Institucional**.
     - El sistema validará automáticamente el dominio `@unisalle.edu.co`.
-    - Tienes **3 intentos** para lograr el objetivo de análisis.
+    - Tienes **3 intentos por cada actividad o lectura**.
     - **IMPORTANTE:** No recargues la página (F5) o perderás tu progreso.
     """)
     
@@ -175,36 +166,18 @@ if not st.session_state.user_id:
         email_input = st.text_input("Correo Electrónico:", placeholder="usuario@unisalle.edu.co")
         if st.button("Iniciar Sesión"):
             if email_input.endswith("@unisalle.edu.co"):
-                correo_limpio = email_input.strip().lower()
-                with st.spinner("Sincronizando base de datos institucional..."):
-                    intentos_bd, fila_bd = registrar_ingreso(correo_limpio)
-                    st.session_state.user_id = correo_limpio
-                    st.session_state.intentos = intentos_bd
-                    st.session_state.fila_bd = fila_bd
-                    st.session_state.ultima_interaccion = time.time()
+                st.session_state.user_id = email_input.strip().lower()
                 st.rerun()
             else:
                 st.error("⛔ Acceso denegado. Debes usar un correo institucional (@unisalle.edu.co).")
-    st.stop()
-
-# --- FASE B: CONTROL DE INTENTOS ---
-MAX_INTENTOS = 3
-if st.session_state.intentos > MAX_INTENTOS:
-    st.error(f"⛔ **ACCESO BLOQUEADO PARA: {st.session_state.user_id}**")
-    st.warning("Has superado el límite de 3 intentos permitidos. Por favor, contacta a tu docente para revisar tu caso.")
-    if st.button("Cerrar Sesión"):
-        st.session_state.clear()
-        st.rerun()
     st.stop()
 
 # 5. MENÚ LATERAL DINÁMICO
 with st.sidebar:
     usuario_corto = st.session_state.user_id.split('@')[0]
     st.title(f"👤 {usuario_corto}")
-    progreso = st.session_state.intentos / MAX_INTENTOS
-    st.progress(progreso, text=f"Intento {st.session_state.intentos} de {MAX_INTENTOS}")
-    st.divider()
     
+    st.divider()
     c_sel = st.selectbox("Asignatura", list(CONFIG.keys()))
     a_sel = st.selectbox("Actividad", list(CONFIG[c_sel].keys()))
     nivel_3 = CONFIG[c_sel][a_sel]
@@ -223,6 +196,28 @@ with st.sidebar:
         rutas_archivos = nivel_3[o_sel]
         titulo_interfaz = f"💬 {c_sel} | {a_sel} | {o_sel}"
         actividad_registro = f"{a_sel} | {o_sel}" 
+
+# --- GESTIÓN DE CAMBIO DE ACTIVIDAD (AQUÍ OCURRE LA MAGIA) ---
+identificador_actual = f"{c_sel}_{actividad_registro}"
+
+if st.session_state.actividad_actual != identificador_actual:
+    st.session_state.actividad_actual = identificador_actual
+    st.session_state.messages = []
+    st.session_state.codigo = None
+    st.session_state.advertencias_ia = 0
+    st.session_state.saturacion_activa = False
+    
+    with st.spinner("Cargando perfil y asignando intentos para esta actividad..."):
+        intentos_bd, fila_bd = obtener_o_crear_registro(st.session_state.user_id, c_sel, actividad_registro)
+        st.session_state.intentos = intentos_bd
+        st.session_state.fila_bd = fila_bd
+        st.session_state.ultima_interaccion = time.time()
+
+# DIBUJAR BARRA DE PROGRESO DESPUÉS DE CARGAR BD
+with st.sidebar:
+    MAX_INTENTOS = 3
+    progreso = min(st.session_state.intentos / MAX_INTENTOS, 1.0)
+    st.progress(progreso, text=f"Intento {st.session_state.intentos} de {MAX_INTENTOS} (Esta actividad)")
     
     st.divider()
     if st.button("🗑️ Reiniciar (Gasta 1 Intento)"):
@@ -232,8 +227,15 @@ with st.sidebar:
         st.session_state.advertencias_ia = 0
         st.session_state.saturacion_activa = False
         st.session_state.ultima_interaccion = time.time()
-        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Reinicio manual")
+        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos, actualizar_hora=True, estado="Reinicio manual")
         st.rerun()
+
+# --- FASE B: CONTROL DE INTENTOS BLOQUEADO ---
+if st.session_state.intentos > MAX_INTENTOS:
+    st.title(titulo_interfaz)
+    st.error(f"⛔ **ACCESO BLOQUEADO PARA ESTA ACTIVIDAD**")
+    st.warning("Has superado el límite de 3 intentos permitidos para esta lectura específica. Puedes seleccionar otra actividad en el menú izquierdo para continuar trabajando.")
+    st.stop() # Detiene el renderizado del chat, pero permite usar la barra lateral.
 
 # 6. CARGAR CONTEXTO
 def leer_pdf(rutas):
@@ -283,7 +285,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         st.error(f"⏱️ **TIEMPO AGOTADO POR INACTIVIDAD**")
         st.warning(f"Pasaron {minutos} minutos sin actividad en el chat. Se ha descontado 1 intento.")
         razon_cierre = "Tiempo agotado (> 20 min)" if st.session_state.saturacion_activa else "Tiempo agotado (> 10 min)"
-        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado=razon_cierre)
+        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, estado=razon_cierre)
         
         st.session_state.intentos += 1
         st.session_state.messages = []
@@ -295,7 +297,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
         st.rerun()
     else:
         st.session_state.ultima_interaccion = time.time()
-        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="En curso")
+        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, estado="En curso")
         
         if len(prompt) > 800:
             st.toast("⚠️ Respuesta muy larga. Resume con tus palabras.", icon="🚫")
@@ -333,7 +335,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                         st.session_state.messages.append({"role": "assistant", "content": alerta_visual, "timestamp": timestamp_tutor})
                     else:
                         st.error("⛔ **INTENTO ANULADO POR USO DE IA**")
-                        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, estado="Cierre por uso de IA")
+                        actualizar_bd(st.session_state.fila_bd, intentos=st.session_state.intentos + 1, actualizar_hora=True, estado="Cierre por uso de IA")
                         st.session_state.intentos += 1
                         st.session_state.messages = []
                         st.session_state.codigo = None
@@ -345,7 +347,6 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 else:
                     st.session_state.saturacion_activa = False 
                     
-                    # --- LÓGICA DE AUTOEVALUACIÓN PORCENTUAL Y FEEDBACK EN BULLETS ---
                     if "completado" in res.lower() and not st.session_state.codigo:
                         rand_code = random.randint(1000, 9999)
                         usuario_clean = st.session_state.user_id.split('@')[0].upper()
@@ -391,7 +392,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                                 feedback_db = "Error al procesar evaluación cualitativa."
 
                         res += f"\n\n ✅ **EJERCICIO APROBADO.**\n\nCódigo de Validación: `{st.session_state.codigo}`"
-                        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, asignatura=c_sel, actividad=actividad_registro, codigo=codigo_final, estado="Completado exitosamente", nota=nota_db, feedback=feedback_db)
+                        actualizar_bd(st.session_state.fila_bd, actualizar_hora=True, codigo=codigo_final, estado="Completado exitosamente", nota=nota_db, feedback=feedback_db)
                     
                     st.caption(f"🕒 {timestamp_tutor}")
                     st.markdown(res)
