@@ -79,7 +79,7 @@ CONFIG = {
     }
 }
 
-# 4. GESTIÓN DE ESTADO (AQUÍ ESTÁ EL AJUSTE CLAVE)
+# 4. GESTIÓN DE ESTADO
 if "user_id" not in st.session_state: st.session_state.user_id = None
 if "actividad_actual" not in st.session_state: st.session_state.actividad_actual = None
 if "intentos" not in st.session_state: st.session_state.intentos = 1
@@ -110,19 +110,16 @@ hoja_bd = init_db()
 def get_hora_colombia():
     return datetime.utcnow() - timedelta(hours=5)
 
-# NUEVA LÓGICA: Busca o crea un registro POR ACTIVIDAD, no solo por correo.
 def obtener_o_crear_registro(correo, asignatura, actividad):
     if not hoja_bd: return 1, None
     try:
         registros = hoja_bd.get_all_records()
         for idx, row in enumerate(registros):
-            # Comprueba si ya existe esta combinación exacta
             if (str(row.get("Correo", "")).strip().lower() == correo and 
                 str(row.get("Asignatura", "")).strip() == asignatura and 
                 str(row.get("Actividad", "")).strip() == actividad):
                 return int(row.get("Intentos", 1)), idx + 2
         
-        # Si no existe, crea una nueva fila con 3 intentos frescos para esta actividad
         now = get_hora_colombia()
         fecha_str = now.strftime("%Y-%m-%d")
         hora_str = now.strftime("%H:%M:%S")
@@ -150,7 +147,7 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estad
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 4.2 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión Definitiva ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("""
@@ -197,7 +194,7 @@ with st.sidebar:
         titulo_interfaz = f"💬 {c_sel} | {a_sel} | {o_sel}"
         actividad_registro = f"{a_sel} | {o_sel}" 
 
-# --- GESTIÓN DE CAMBIO DE ACTIVIDAD (AQUÍ OCURRE LA MAGIA) ---
+# --- GESTIÓN DE CAMBIO DE ACTIVIDAD ---
 identificador_actual = f"{c_sel}_{actividad_registro}"
 
 if st.session_state.actividad_actual != identificador_actual:
@@ -213,7 +210,7 @@ if st.session_state.actividad_actual != identificador_actual:
         st.session_state.fila_bd = fila_bd
         st.session_state.ultima_interaccion = time.time()
 
-# DIBUJAR BARRA DE PROGRESO DESPUÉS DE CARGAR BD
+# DIBUJAR BARRA DE PROGRESO
 with st.sidebar:
     MAX_INTENTOS = 3
     progreso = min(st.session_state.intentos / MAX_INTENTOS, 1.0)
@@ -235,7 +232,7 @@ if st.session_state.intentos > MAX_INTENTOS:
     st.title(titulo_interfaz)
     st.error(f"⛔ **ACCESO BLOQUEADO PARA ESTA ACTIVIDAD**")
     st.warning("Has superado el límite de 3 intentos permitidos para esta lectura específica. Puedes seleccionar otra actividad en el menú izquierdo para continuar trabajando.")
-    st.stop() # Detiene el renderizado del chat, pero permite usar la barra lateral.
+    st.stop() 
 
 # 6. CARGAR CONTEXTO
 def leer_pdf(rutas):
@@ -258,7 +255,8 @@ Texto de referencia: {texto_referencia}
 PROTOCOLO:
 1. INICIO: Espera a que el alumno proponga el tema/tesis.
 2. DESARROLLO: Cuestiona sus argumentos. No des respuestas.
-3. CONTROL DE IA: Si detectas que el alumno responde usando herramientas de Inteligencia Artificial, textos genéricos, o falta de sustento personal, DEBES INCLUIR OBLIGATORIAMENTE al inicio de tu respuesta: [ALERTA_IA]. Luego, indícale qué falló y recuérdale que debe usar sus propias ideas.
+3. CONTROL DE IA (AJUSTADO): Si detectas que el alumno responde usando herramientas de Inteligencia Artificial (textos robóticos genéricos sin voz propia, o desconectados del contexto), DEBES INCLUIR OBLIGATORIAMENTE al inicio de tu respuesta: [ALERTA_IA].
+⚠️ REGLA DE EXCEPCIÓN VITAL: El uso de vocabulario técnico avanzado (ej. plusvalía urbana, gentrificación, industrialización) y la mención de instituciones (ej. Banco Mundial, BID, DNP) es ESPERADO Y REQUERIDO. Un estudiante brillante usará estos términos. BAJO NINGUNA CIRCUNSTANCIA marques como [ALERTA_IA] a un estudiante solo por usar lenguaje académico formal, conceptos complejos o sintaxis estructurada. Solo castiga la falta de argumentación o el copiado/pegado evidente sin análisis personal.
 
 REGLAS DE TIEMPO:
 - [TIEMPO: 5-10 min]: Advierte sobre el uso del tiempo.
@@ -329,7 +327,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     st.session_state.advertencias_ia += 1
                     if st.session_state.advertencias_ia == 1:
                         res_limpia = res.replace("[ALERTA_IA]", "").strip()
-                        alerta_visual = f"⚠️ **ADVERTENCIA DEL SISTEMA (1/2)**\n\nSe ha detectado el posible uso de herramientas automatizadas. Recuerda usar tu propio análisis. Si reincides, tu intento será anulado.\n\n---\n\n{res_limpia}"
+                        alerta_visual = f"⚠️ **ADVERTENCIA DEL SISTEMA (1/2)**\n\nSe ha detectado el posible uso de herramientas automatizadas. Recuerda usar tu propio análisis.\n\n---\n\n{res_limpia}"
                         st.caption(f"🕒 {timestamp_tutor}")
                         st.markdown(alerta_visual)
                         st.session_state.messages.append({"role": "assistant", "content": alerta_visual, "timestamp": timestamp_tutor})
