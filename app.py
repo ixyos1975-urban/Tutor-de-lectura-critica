@@ -147,7 +147,7 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estad
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión Definitiva ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 4.3 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("""
