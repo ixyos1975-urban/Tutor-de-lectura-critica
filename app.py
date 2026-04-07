@@ -262,7 +262,7 @@ def configurar_motor_rag(rutas, _actividad_id):
     fragmentos = text_splitter.split_documents(documentos)
 
     # Vectorización: Convierte el texto en coordenadas (usa la capa gratuita)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=st.secrets["GOOGLE_API_KEY"])
     vectorstore = Chroma.from_documents(fragmentos, embeddings)
     
     # Configura la búsqueda para traer solo los 3 fragmentos más relevantes
