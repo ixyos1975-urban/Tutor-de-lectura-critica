@@ -350,7 +350,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 # Ensambla el prompt base con el fragmento específico que se encontró
                 PROMPT_SISTEMA_DINAMICO = PROMPT_SISTEMA_BASE + f"\n\nCONTEXTO RECUPERADO EXCLUSIVAMENTE PARA ESTA RESPUESTA:\n{contexto_recuperado}"
 
-                model = genai.GenerativeModel('models/gemini-flash-latest', system_instruction=PROMPT_SISTEMA_DINAMICO)
+                # LÍNEA CORREGIDA: Motor Principal
+                model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=PROMPT_SISTEMA_DINAMICO)
                 response = model.generate_content(historial_envio)
                 # ------------------------
 
@@ -414,7 +415,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                             """
                             
                             try:
-                                eval_model = genai.GenerativeModel('models/gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
+                                # LÍNEA CORREGIDA: Motor de Evaluación
+                                eval_model = genai.GenerativeModel('gemini-1.5-flash', generation_config={"response_mime_type": "application/json"})
                                 eval_response = eval_model.generate_content(prompt_evaluacion)
                                 data_eval = json.loads(eval_response.text)
                                 nota_db = data_eval.get("nota_final", 0)
