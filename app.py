@@ -350,7 +350,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 # Ensambla el prompt base con el fragmento específico que se encontró
                 PROMPT_SISTEMA_DINAMICO = PROMPT_SISTEMA_BASE + f"\n\nCONTEXTO RECUPERADO EXCLUSIVAMENTE PARA ESTA RESPUESTA:\n{contexto_recuperado}"
 
-                model = genai.GenerativeModel('models/gemini-1.5-flash', system_instruction=PROMPT_SISTEMA_DINAMICO)
+                model = genai.GenerativeModel('gemini-1.5-flash-latest', system_instruction=PROMPT_SISTEMA_DINAMICO)
                 response = model.generate_content(historial_envio)
                 # ------------------------
 
