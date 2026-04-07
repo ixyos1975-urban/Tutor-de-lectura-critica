@@ -285,7 +285,7 @@ REGLAS DE TIEMPO:
 - [TIEMPO: 5-10 min]: Advierte sobre el uso del tiempo.
 
 VALIDACIÓN:
-Escribe 'COMPLETADO' SOLO si hay análisis profundo, propio y citas correctas.
+Imprime exactamente la etiqueta '[DICTAMEN_APROBADO]' SOLO cuando decidas dar por terminado y aprobado el debate porque el alumno demostró análisis profundo, propio y citas correctas. NUNCA menciones ni uses esta etiqueta dentro de tus explicaciones, advertencias o retos; úsala ÚNICAMENTE como tu veredicto final.
 """
 
 st.title(titulo_interfaz)
