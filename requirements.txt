@@ -1,5 +1,7 @@
 streamlit
-google-generativeai==0.8.3
-PyPDF2
-gspread
-google-auth
+google-generativeai
+langchain
+langchain-google-genai
+langchain-community
+chromadb
+pypdf
