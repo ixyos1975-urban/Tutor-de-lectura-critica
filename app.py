@@ -9,12 +9,20 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 from PyPDF2 import PdfReader
 
+# Nuevas librerías para RAG
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores import Chroma
+
 # 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(page_title="Tutor de Análisis Crítico", layout="wide")
 
 # 2. CONEXIÓN API GEMINI
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+    # LangChain requiere que la llave esté en las variables de entorno del sistema operativo
+    os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
 else:
     st.error("⚠️ Falta la API Key en los Secrets de Streamlit.")
     st.stop()
@@ -147,7 +155,7 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estad
 if not st.session_state.user_id:
     st.markdown("<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>", unsafe_allow_html=True)
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
-    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 4.3 ({now_bogota})</b></small></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: gray;'><small><b>Versión 5.0 RAG ({now_bogota})</b></small></p>", unsafe_allow_html=True)
     st.divider()
     
     st.markdown("""
@@ -234,29 +242,44 @@ if st.session_state.intentos > MAX_INTENTOS:
     st.warning("Has superado el límite de 3 intentos permitidos para esta lectura específica. Puedes seleccionar otra actividad en el menú izquierdo para continuar trabajando.")
     st.stop() 
 
-# 6. CARGAR CONTEXTO
-def leer_pdf(rutas):
-    texto = ""
+# 6. MOTOR DE LECTURA Y BASE DE DATOS VECTORIAL (RAG)
+@st.cache_resource(show_spinner=False)
+def configurar_motor_rag(rutas, _actividad_id):
+    documentos = []
     for r in rutas:
         if os.path.exists(r):
             try:
-                lector = PdfReader(r)
-                for p in lector.pages: texto += p.extract_text() + "\n"
-            except: continue
-    return texto
+                loader = PyPDFLoader(r)
+                documentos.extend(loader.load())
+            except Exception:
+                continue
+    
+    if not documentos:
+        return None
 
-texto_referencia = leer_pdf(rutas_archivos)
+    # Fragmentación: Corta la lectura en bloques de 1000 caracteres
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    fragmentos = text_splitter.split_documents(documentos)
 
-# --- CEREBRO DEL TUTOR ---
-PROMPT_SISTEMA = f"""
+    # Vectorización: Convierte el texto en coordenadas (usa la capa gratuita)
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    vectorstore = Chroma.from_documents(fragmentos, embeddings)
+    
+    # Configura la búsqueda para traer solo los 3 fragmentos más relevantes
+    return vectorstore.as_retriever(search_kwargs={"k": 3})
+
+with st.spinner("Fragmentando lectura y construyendo memoria local..."):
+    recuperador_rag = configurar_motor_rag(rutas_archivos, identificador_actual)
+
+# --- CEREBRO DEL TUTOR (Base estática sin PDF) ---
+PROMPT_SISTEMA_BASE = """
 Eres un Tutor de Análisis Crítico Universitario (Unisalle).
-Texto de referencia: {texto_referencia}
 
 PROTOCOLO:
 1. INICIO: Espera a que el alumno proponga el tema/tesis.
 2. DESARROLLO: Cuestiona sus argumentos. No des respuestas.
-3. CONTROL DE IA (AJUSTADO): Si detectas que el alumno responde usando herramientas de Inteligencia Artificial (textos robóticos genéricos sin voz propia, o desconectados del contexto), DEBES INCLUIR OBLIGATORIAMENTE al inicio de tu respuesta: [ALERTA_IA].
-⚠️ REGLA DE EXCEPCIÓN VITAL: El uso de vocabulario técnico avanzado (ej. plusvalía urbana, gentrificación, industrialización) y la mención de instituciones (ej. Banco Mundial, BID, DNP) es ESPERADO Y REQUERIDO. Un estudiante brillante usará estos términos. BAJO NINGUNA CIRCUNSTANCIA marques como [ALERTA_IA] a un estudiante solo por usar lenguaje académico formal, conceptos complejos o sintaxis estructurada. Solo castiga la falta de argumentación o el copiado/pegado evidente sin análisis personal.
+3. CONTROL DE IA: Si detectas que el alumno responde usando herramientas de Inteligencia Artificial, DEBES INCLUIR OBLIGATORIAMENTE al inicio de tu respuesta: [ALERTA_IA].
+⚠️ REGLA DE EXCEPCIÓN VITAL: El uso de vocabulario técnico avanzado y la mención de instituciones es ESPERADO Y REQUERIDO. BAJO NINGUNA CIRCUNSTANCIA marques como [ALERTA_IA] a un estudiante solo por usar lenguaje académico formal.
 
 REGLAS DE TIEMPO:
 - [TIEMPO: 5-10 min]: Advierte sobre el uso del tiempo.
@@ -318,8 +341,19 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     aviso = f"[SISTEMA: El alumno tardó {minutos} min en responder. Adviértele sobre el uso del tiempo y recuérdale que el límite estricto es de 10 minutos máximos por intervención.]"
                     historial_envio.append({"role": "user", "parts": [aviso]})
 
-                model = genai.GenerativeModel('models/gemini-flash-latest', system_instruction=PROMPT_SISTEMA)
+                # --- RECUPERACIÓN RAG ---
+                contexto_recuperado = ""
+                if recuperador_rag:
+                    docs_relevantes = recuperador_rag.invoke(prompt)
+                    contexto_recuperado = "\n\n".join([doc.page_content for doc in docs_relevantes])
+
+                # Ensambla el prompt base con el fragmento específico que se encontró
+                PROMPT_SISTEMA_DINAMICO = PROMPT_SISTEMA_BASE + f"\n\nCONTEXTO RECUPERADO EXCLUSIVAMENTE PARA ESTA RESPUESTA:\n{contexto_recuperado}"
+
+                model = genai.GenerativeModel('models/gemini-1.5-flash', system_instruction=PROMPT_SISTEMA_DINAMICO)
                 response = model.generate_content(historial_envio)
+                # ------------------------
+
                 res = response.text
                 timestamp_tutor = get_hora_colombia().strftime("%d/%m/%Y %H:%M:%S")
                 
