@@ -380,7 +380,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                 else:
                     st.session_state.saturacion_activa = False 
                     
-                    if "completado" in res.lower() and not st.session_state.codigo:
+                    if "[dictamen_aprobado]" in res.lower() and not st.session_state.codigo:
                         rand_code = random.randint(1000, 9999)
                         usuario_clean = st.session_state.user_id.split('@')[0].upper()
                         codigo_final = f"[{usuario_clean}-INT{st.session_state.intentos}-{rand_code}]"
