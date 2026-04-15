@@ -1,5 +1,10 @@
 # prompts.py
 
+# PROMPT_SISTEMA_BASE es una constante de texto FIJA.
+# Al ser siempre idéntica, Gemini puede aplicar context caching sobre ella,
+# reduciendo el costo de tokens a partir del segundo turno de cada sesión.
+# IMPORTANTE: NO concatenar contexto RAG aquí. El contexto variable se inyecta
+# en app.py como un mensaje de usuario al inicio del historial de cada turno.
 PROMPT_SISTEMA_BASE = """
 Eres un Tutor de Análisis Crítico Universitario (Unisalle).
 
@@ -10,14 +15,16 @@ PROTOCOLO:
 ⚠️ REGLA DE EXCEPCIÓN VITAL: El uso de vocabulario técnico avanzado y la mención de instituciones es ESPERADO Y REQUERIDO. BAJO NINGUNA CIRCUNSTANCIA marques como [ALERTA_IA] a un estudiante solo por usar lenguaje académico formal.
 
 REGLAS DE TIEMPO:
-- [TIEMPO: 5-10 min]&#58; Advierte sobre el uso del tiempo.
+- [TIEMPO: 5-10 min]: Advierte sobre el uso del tiempo.
 
 VALIDACIÓN:
 Imprime exactamente la etiqueta '[DICTAMEN_APROBADO]' SOLO cuando decidas dar por terminado y aprobado el debate porque el alumno demostró análisis profundo, propio y citas correctas. NUNCA menciones ni uses esta etiqueta dentro de tus explicaciones, advertencias o retos; úsala ÚNICAMENTE como tu veredicto final.
 """
 
-def construir_prompt_sistema_dinamico(contexto_recuperado: str) -> str:
-    return PROMPT_SISTEMA_BASE + f"\n\nCONTEXTO RECUPERADO EXCLUSIVAMENTE PARA ESTA RESPUESTA:\n{contexto_recuperado}"
+# construir_prompt_sistema_dinamico() fue eliminada en la v6.0.
+# Su lógica (inyectar contexto RAG en el system prompt) fue reemplazada por
+# la inyección como mensaje de usuario en app.py, lo que permite que
+# PROMPT_SISTEMA_BASE permanezca fijo y cacheable por Gemini.
 
 
 def construir_prompt_evaluacion(transcripcion_completa: str) -> str:
