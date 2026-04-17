@@ -44,17 +44,31 @@ CONFIG = {
     },
     "Arq-POT": {
         "Actividad_1": {
-            "Sesion_1": {"Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_1/Archivo_1.pdf"]},
-            "Sesion_2": {"Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_2/Archivo_2.pdf"]},
-            "Sesion_3": {"Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_3/Archivo_3.pdf"]}
+            "Sesion_1": {
+                "Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_1/Archivo_1.pdf"]
+            },
+            "Sesion_2": {
+                "Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_2/Archivo_2.pdf"]
+            },
+            "Sesion_3": {
+                "Opción Única": ["documentos/Arq-POT/Actividad_1/Sesion_3/Archivo_3.pdf"]
+            }
         },
         "Actividad_2": {
-            "Sesion_4": {"Opción Única": ["documentos/Arq-POT/Actividad_2/Sesion_4/Archivo_4.pdf"]},
-            "Sesion_5": {"Opción Única": ["documentos/Arq-POT/Actividad_2/Sesion_5/Archivo_5.pdf"]}
+            "Sesion_4": {
+                "Opción Única": ["documentos/Arq-POT/Actividad_2/Sesion_4/Archivo_4.pdf"]
+            },
+            "Sesion_5": {
+                "Opción Única": ["documentos/Arq-POT/Actividad_2/Sesion_5/Archivo_5.pdf"]
+            }
         },
         "Actividad_3": {
-            "Sesion_6": {"Opción Única": ["documentos/Arq-POT/Actividad_3/Sesion_6/Archivo_6.pdf"]},
-            "Sesion_7": {"Opción Única": ["documentos/Arq-POT/Actividad_3/Sesion_7/Archivo_7.pdf"]}
+            "Sesion_6": {
+                "Opción Única": ["documentos/Arq-POT/Actividad_3/Sesion_6/Archivo_6.pdf"]
+            },
+            "Sesion_7": {
+                "Opción Única": ["documentos/Arq-POT/Actividad_3/Sesion_7/Archivo_7.pdf"]
+            }
         }
     }
 }
