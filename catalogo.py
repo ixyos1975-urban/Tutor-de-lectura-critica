@@ -70,5 +70,11 @@ CONFIG = {
                 "Opción Única": ["documentos/Arq-POT/Actividad_3/Sesion_7/Archivo_7.pdf"]
             }
         }
+    },
+    "PRUEBA": {
+        "Actividad_1": {
+            "Demo_1": ["documentos/PRUEBA/Actividad_1/Demo_1.pdf"],
+            "Demo_2": ["documentos/PRUEBA/Actividad_1/Demo_2.pdf"]
+        }
     }
 }
