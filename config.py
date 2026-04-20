@@ -17,19 +17,9 @@ MODEL_EVAL = "models/gemini-flash-latest"
 EMBEDDING_MODEL = "models/embedding-001"
 
 # Parámetros RAG
-# Ajuste intermedio: reduce consumo sin fragmentar demasiado el sentido del texto.
-CHUNK_SIZE = 750
-CHUNK_OVERLAP = 150
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 200
 TOP_K = 3
 
 # Dominio institucional permitido
 DOMINIO_PERMITIDO = "@unisalle.edu.co"
-
-# Optimización de consumo de tokens
-# Solo se enviarán a la API los últimos N mensajes del historial.
-# El historial completo sigue guardado en session_state para pantalla y reporte.
-MAX_HISTORIAL = 8
-
-# Límite de salida del tutor.
-# Un tutor socrático debe responder con preguntas y observaciones breves.
-MAX_OUTPUT_TOKENS = 350
