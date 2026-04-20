@@ -27,8 +27,6 @@ from config import (
     CHUNK_OVERLAP,
     TOP_K,
     DOMINIO_PERMITIDO,
-    MAX_HISTORIAL,
-    MAX_OUTPUT_TOKENS,
 )
 
 from catalogo import CONFIG
@@ -329,10 +327,8 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
         with st.chat_message("assistant"):
             try:
-                historial_reciente = st.session_state.messages[-MAX_HISTORIAL:] if MAX_HISTORIAL > 0 else st.session_state.messages
-
                 historial_envio = []
-                for m in historial_reciente:
+                for m in st.session_state.messages:
                     r = "model" if m["role"] == "assistant" else "user"
                     historial_envio.append({"role": r, "parts": [m["content"]]})
 
@@ -352,8 +348,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
                 model = genai.GenerativeModel(
                     MODEL_MAIN,
-                    system_instruction=prompt_sistema_dinamico,
-                    generation_config={"max_output_tokens": MAX_OUTPUT_TOKENS}
+                    system_instruction=prompt_sistema_dinamico
                 )
                 response = model.generate_content(historial_envio)
                 res = response.text
