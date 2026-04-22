@@ -87,8 +87,10 @@ def init_db():
 
 hoja_bd = init_db()
 
+
 def get_hora_colombia():
     return datetime.utcnow() - timedelta(hours=5)
+
 
 def obtener_o_crear_registro(correo, asignatura, actividad):
     if not hoja_bd:
@@ -114,6 +116,7 @@ def obtener_o_crear_registro(correo, asignatura, actividad):
     except Exception:
         return 1, None
 
+
 def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estado=None, nota=None, feedback=None):
     if not hoja_bd or not fila:
         return
@@ -134,6 +137,42 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estad
             hoja_bd.update_cell(fila, 13, feedback)
     except Exception:
         pass
+
+
+def es_error_saturacion(error):
+    error_msg = str(error).lower()
+    patrones = [
+        "429",
+        "quota",
+        "exhausted",
+        "resource has been exhausted",
+        "rate limit",
+    ]
+    return any(p in error_msg for p in patrones)
+
+
+def generar_con_reintentos(model, historial_envio, max_reintentos=3, esperas=(4, 8, 15)):
+    ultimo_error = None
+
+    for intento in range(max_reintentos):
+        try:
+            return model.generate_content(historial_envio)
+        except Exception as e:
+            ultimo_error = e
+
+            if not es_error_saturacion(e):
+                raise
+
+            if intento < max_reintentos - 1:
+                espera = esperas[intento] if intento < len(esperas) else esperas[-1]
+                st.warning(
+                    f"⚠️ Servidor temporalmente ocupado. Reintentando en {espera} segundos... "
+                    f"(intento {intento + 1} de {max_reintentos})"
+                )
+                time.sleep(espera)
+            else:
+                raise ultimo_error
+
 
 # 5. LOGIN INSTITUCIONAL
 if not st.session_state.user_id:
@@ -350,7 +389,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     MODEL_MAIN,
                     system_instruction=prompt_sistema_dinamico
                 )
-                response = model.generate_content(historial_envio)
+                response = generar_con_reintentos(model, historial_envio)
                 res = response.text
                 timestamp_tutor = get_hora_colombia().strftime("%d/%m/%Y %H:%M:%S")
 
@@ -432,17 +471,23 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                     )
 
             except Exception as e:
-                error_msg = str(e).lower()
-                if "429" in error_msg or "quota" in error_msg or "exhausted" in error_msg:
+                if es_error_saturacion(e):
                     texto_rescatado = ""
+
                     if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
                         texto_rescatado = st.session_state.messages[-1]["content"]
                         st.session_state.messages.pop()
-                    st.session_state.saturacion_activa = True
-                    st.warning("⚠️ **Alta demanda en el servidor.** Espera 10 minutos y vuelve a enviar el mensaje.")
-                    if texto_rescatado:
-                        st.info(f"💡 Copia y pega esto después:\n\n{texto_rescatado}")
+
+                    st.session_state.saturacion_activa = False
                     st.session_state.ultima_interaccion = time.time()
+
+                    st.warning(
+                        "⚠️ El servidor sigue ocupado en este momento. "
+                        "Por favor intenta nuevamente en 30 a 60 segundos."
+                    )
+
+                    if texto_rescatado:
+                        st.info(f"💡 Tu texto quedó preservado. Cópialo y vuelve a enviarlo:\n\n{texto_rescatado}")
                 else:
                     st.error(f"Error técnico: {e}")
 
