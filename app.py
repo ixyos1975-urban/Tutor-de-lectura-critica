@@ -183,6 +183,17 @@ def normalizar_nombre_indice(texto):
     return texto
 
 
+def obtener_ruta_indice(actividad_id):
+    nombre_indice = normalizar_nombre_indice(actividad_id)
+    ruta_base = Path("rag_store")
+    return ruta_base / nombre_indice
+
+
+def existe_indice_rag(actividad_id):
+    ruta_indice = obtener_ruta_indice(actividad_id)
+    return ruta_indice.exists() and any(ruta_indice.iterdir())
+
+
 # 5. LOGIN INSTITUCIONAL
 if not st.session_state.user_id:
     st.markdown(
@@ -297,10 +308,8 @@ def configurar_motor_rag(rutas, actividad_id):
         google_api_key=st.secrets["GOOGLE_API_KEY"],
     )
 
-    nombre_indice = normalizar_nombre_indice(actividad_id)
-    ruta_base = Path("rag_store")
-    ruta_indice = ruta_base / nombre_indice
-    ruta_base.mkdir(parents=True, exist_ok=True)
+    ruta_indice = obtener_ruta_indice(actividad_id)
+    ruta_indice.parent.mkdir(parents=True, exist_ok=True)
 
     # Si ya existe un índice persistido, lo carga directamente
     if ruta_indice.exists() and any(ruta_indice.iterdir()):
@@ -347,8 +356,18 @@ def configurar_motor_rag(rutas, actividad_id):
     return vectorstore.as_retriever(search_kwargs={"k": TOP_K})
 
 
-with st.spinner("Cargando índice RAG de la lectura..."):
+indice_existia_antes = existe_indice_rag(identificador_actual)
+
+with st.spinner("Preparando índice RAG de la lectura..."):
     recuperador_rag = configurar_motor_rag(rutas_archivos, identificador_actual)
+
+if recuperador_rag:
+    if indice_existia_antes:
+        st.caption("📚 Índice RAG cargado desde almacenamiento local de la app.")
+    else:
+        st.caption("🛠️ Índice RAG construido por primera vez y almacenado localmente en la app.")
+else:
+    st.caption("⚠️ No fue posible construir o cargar el índice RAG para esta lectura.")
 
 # 11. INTERFAZ DE CHAT
 st.title(titulo_interfaz)
