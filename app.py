@@ -5,6 +5,8 @@ import os
 import time
 import json
 import gspread
+import re
+from pathlib import Path
 from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 
@@ -84,6 +86,7 @@ def init_db():
     except Exception:
         st.error("Error conectando a la base de datos. Revisa los Secrets.")
         return None
+
 
 hoja_bd = init_db()
 
@@ -174,16 +177,22 @@ def generar_con_reintentos(model, historial_envio, max_reintentos=3, esperas=(4,
                 raise ultimo_error
 
 
+def normalizar_nombre_indice(texto):
+    texto = texto.strip().replace(" ", "_")
+    texto = re.sub(r"[^A-Za-z0-9_\-]", "", texto)
+    return texto
+
+
 # 5. LOGIN INSTITUCIONAL
 if not st.session_state.user_id:
     st.markdown(
         "<h1 style='text-align: center;'>💬 Tutor de Análisis Crítico en Temas Urbanos<br>🏛️ FADU - Unisalle</h1>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
     now_bogota = get_hora_colombia().strftime("%d/%m/%Y, %H:%M")
     st.markdown(
         f"<p style='text-align: center; color: gray;'><small><b>Versión 5.0 RAG ({now_bogota})</b></small></p>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
     st.divider()
 
@@ -266,7 +275,7 @@ with st.sidebar:
             st.session_state.fila_bd,
             intentos=st.session_state.intentos,
             actualizar_hora=True,
-            estado="Reinicio manual"
+            estado="Reinicio manual",
         )
         st.rerun()
 
@@ -282,7 +291,29 @@ if st.session_state.intentos > MAX_INTENTOS:
 
 # 10. MOTOR RAG
 @st.cache_resource(show_spinner=False)
-def configurar_motor_rag(rutas, _actividad_id):
+def configurar_motor_rag(rutas, actividad_id):
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model=EMBEDDING_MODEL,
+        google_api_key=st.secrets["GOOGLE_API_KEY"],
+    )
+
+    nombre_indice = normalizar_nombre_indice(actividad_id)
+    ruta_base = Path("rag_store")
+    ruta_indice = ruta_base / nombre_indice
+    ruta_base.mkdir(parents=True, exist_ok=True)
+
+    # Si ya existe un índice persistido, lo carga directamente
+    if ruta_indice.exists() and any(ruta_indice.iterdir()):
+        try:
+            vectorstore = Chroma(
+                persist_directory=str(ruta_indice),
+                embedding_function=embeddings,
+            )
+            return vectorstore.as_retriever(search_kwargs={"k": TOP_K})
+        except Exception:
+            pass
+
+    # Si no existe, construye el índice desde cero y lo persiste
     documentos = []
     for r in rutas:
         if os.path.exists(r):
@@ -297,19 +328,26 @@ def configurar_motor_rag(rutas, _actividad_id):
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP
+        chunk_overlap=CHUNK_OVERLAP,
     )
     fragmentos = text_splitter.split_documents(documentos)
 
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model=EMBEDDING_MODEL,
-        google_api_key=st.secrets["GOOGLE_API_KEY"]
+    vectorstore = Chroma.from_documents(
+        fragmentos,
+        embeddings,
+        persist_directory=str(ruta_indice),
     )
-    vectorstore = Chroma.from_documents(fragmentos, embeddings)
+
+    try:
+        if hasattr(vectorstore, "persist"):
+            vectorstore.persist()
+    except Exception:
+        pass
 
     return vectorstore.as_retriever(search_kwargs={"k": TOP_K})
 
-with st.spinner("Fragmentando lectura y construyendo memoria local..."):
+
+with st.spinner("Cargando índice RAG de la lectura..."):
     recuperador_rag = configurar_motor_rag(rutas_archivos, identificador_actual)
 
 # 11. INTERFAZ DE CHAT
@@ -336,7 +374,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
             st.session_state.fila_bd,
             intentos=st.session_state.intentos + 1,
             actualizar_hora=True,
-            estado=razon_cierre
+            estado=razon_cierre,
         )
 
         st.session_state.intentos += 1
@@ -387,7 +425,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
 
                 model = genai.GenerativeModel(
                     MODEL_MAIN,
-                    system_instruction=prompt_sistema_dinamico
+                    system_instruction=prompt_sistema_dinamico,
                 )
                 response = generar_con_reintentos(model, historial_envio)
                 res = response.text
@@ -414,7 +452,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                             st.session_state.fila_bd,
                             intentos=st.session_state.intentos + 1,
                             actualizar_hora=True,
-                            estado="Cierre por uso de IA"
+                            estado="Cierre por uso de IA",
                         )
                         st.session_state.intentos += 1
                         st.session_state.messages = []
@@ -444,7 +482,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                             try:
                                 eval_model = genai.GenerativeModel(
                                     MODEL_EVAL,
-                                    generation_config={"response_mime_type": "application/json"}
+                                    generation_config={"response_mime_type": "application/json"},
                                 )
                                 eval_response = eval_model.generate_content(prompt_evaluacion)
                                 data_eval = json.loads(eval_response.text)
@@ -461,7 +499,7 @@ if prompt := st.chat_input("Escribe tu análisis aquí..."):
                             codigo=codigo_final,
                             estado="Completado exitosamente",
                             nota=nota_db,
-                            feedback=feedback_db
+                            feedback=feedback_db,
                         )
 
                     st.caption(f"🕒 {timestamp_tutor}")
@@ -509,5 +547,5 @@ if st.session_state.codigo:
         label=f"📥 Descargar Evidencia ({nombre_archivo})",
         data=reporte,
         file_name=nombre_archivo,
-        mime="text/plain"
+        mime="text/plain",
     )
