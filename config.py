@@ -12,9 +12,12 @@ TIMEOUT_SATURACION = 1200  # 20 minutos
 AVISO_TIEMPO = 300         # 5 minutos
 
 # Modelos Gemini
-MODEL_MAIN = "models/gemini-flash-latest"
-MODEL_EVAL = "models/gemini-flash-latest"
-EMBEDDING_MODEL = "models/embedding-001"
+# Se fijan modelos explícitos para evitar depender de alias "latest".
+MODEL_MAIN = "gemini-2.5-flash"
+MODEL_EVAL = "gemini-2.5-flash"
+
+# Modelo de embeddings actualizado
+EMBEDDING_MODEL = "models/gemini-embedding-001"
 
 # Parámetros RAG
 CHUNK_SIZE = 1000
