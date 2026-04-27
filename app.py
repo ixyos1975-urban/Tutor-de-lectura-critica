@@ -183,6 +183,17 @@ def normalizar_nombre_indice(texto):
     return texto
 
 
+def obtener_ruta_indice(actividad_id):
+    nombre_indice = normalizar_nombre_indice(actividad_id)
+    ruta_base = Path(__file__).resolve().parent / "rag_store"
+    return ruta_base / nombre_indice
+
+
+def existe_indice_rag(actividad_id):
+    ruta_indice = obtener_ruta_indice(actividad_id)
+    return ruta_indice.exists() and any(ruta_indice.iterdir())
+
+
 # 5. LOGIN INSTITUCIONAL
 if not st.session_state.user_id:
     st.markdown(
