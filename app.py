@@ -87,13 +87,10 @@ def init_db():
         st.error("Error conectando a la base de datos. Revisa los Secrets.")
         return None
 
-
 hoja_bd = init_db()
-
 
 def get_hora_colombia():
     return datetime.utcnow() - timedelta(hours=5)
-
 
 def obtener_o_crear_registro(correo, asignatura, actividad):
     if not hoja_bd:
@@ -119,7 +116,6 @@ def obtener_o_crear_registro(correo, asignatura, actividad):
     except Exception:
         return 1, None
 
-
 def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estado=None, nota=None, feedback=None):
     if not hoja_bd or not fila:
         return
@@ -141,7 +137,6 @@ def actualizar_bd(fila, intentos=None, actualizar_hora=False, codigo=None, estad
     except Exception:
         pass
 
-
 def es_error_saturacion(error):
     error_msg = str(error).lower()
     patrones = [
@@ -153,19 +148,15 @@ def es_error_saturacion(error):
     ]
     return any(p in error_msg for p in patrones)
 
-
 def generar_con_reintentos(model, historial_envio, max_reintentos=3, esperas=(4, 8, 15)):
     ultimo_error = None
-
     for intento in range(max_reintentos):
         try:
             return model.generate_content(historial_envio)
         except Exception as e:
             ultimo_error = e
-
             if not es_error_saturacion(e):
                 raise
-
             if intento < max_reintentos - 1:
                 espera = esperas[intento] if intento < len(esperas) else esperas[-1]
                 st.warning(
@@ -176,28 +167,19 @@ def generar_con_reintentos(model, historial_envio, max_reintentos=3, esperas=(4,
             else:
                 raise ultimo_error
 
+def normalizar_nombre_indice(texto):
+    texto = texto.strip().replace(" ", "_")
+    texto = re.sub(r"[^A-Za-z0-9_\-]", "", texto)
+    return texto
 
 def obtener_ruta_indice(actividad_id):
     nombre_indice = normalizar_nombre_indice(actividad_id)
     ruta_base = Path(__file__).resolve().parent / "rag_store"
     return ruta_base / nombre_indice
 
-
 def existe_indice_rag(actividad_id):
     ruta_indice = obtener_ruta_indice(actividad_id)
     return ruta_indice.exists() and any(ruta_indice.iterdir())
-
-
-def obtener_ruta_indice(actividad_id):
-    nombre_indice = normalizar_nombre_indice(actividad_id)
-    ruta_base = Path(__file__).resolve().parent / "rag_store"
-    return ruta_base / nombre_indice
-
-
-def existe_indice_rag(actividad_id):
-    ruta_indice = obtener_ruta_indice(actividad_id)
-    return ruta_indice.exists() and any(ruta_indice.iterdir())
-
 
 # 5. LOGIN INSTITUCIONAL
 if not st.session_state.user_id:
@@ -306,18 +288,81 @@ if st.session_state.intentos > MAX_INTENTOS:
     st.stop()
 
 # 10. MOTOR RAG
-indice_existia_antes = existe_indice_rag(identificador_actual)
+@st.cache_resource(show_spinner=False)
+def configurar_motor_rag(rutas, actividad_id):
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model=EMBEDDING_MODEL,
+        google_api_key=st.secrets["GOOGLE_API_KEY"],
+    )
 
-with st.spinner("Preparando índice RAG de la lectura..."):
-    recuperador_rag = configurar_motor_rag(rutas_archivos, identificador_actual)
+    ruta_indice = obtener_ruta_indice(actividad_id)
+    ruta_indice.parent.mkdir(parents=True, exist_ok=True)
 
-if recuperador_rag:
-    if indice_existia_antes:
-        st.caption("📚 Índice RAG cargado desde almacenamiento local de la app.")
-    else:
-        st.caption("🛠️ Índice RAG construido por primera vez y almacenado localmente en la app.")
-else:
-    st.caption("⚠️ No fue posible construir o cargar el índice RAG para esta lectura.")
+    # 1. Intentar cargar un índice ya existente
+    if ruta_indice.exists() and any(ruta_indice.iterdir()):
+        try:
+            vectorstore = Chroma(
+                persist_directory=str(ruta_indice),
+                embedding_function=embeddings,
+            )
+            return vectorstore.as_retriever(search_kwargs={"k": TOP_K})
+        except Exception as e:
+            st.warning(
+                f"⚠️ El índice RAG existente no pudo cargarse. "
+                f"Se intentará reconstruirlo. Detalle: {e}"
+            )
+
+    # 2. Si no existe o falló, reconstruir desde los PDFs
+    documentos = []
+    ruta_proyecto = Path(__file__).resolve().parent
+
+    rutas_no_encontradas = []
+    errores_carga = []
+
+    for r in rutas:
+        ruta_pdf = (ruta_proyecto / r).resolve()
+
+        if ruta_pdf.exists():
+            try:
+                loader = PyPDFLoader(str(ruta_pdf))
+                documentos.extend(loader.load())
+            except Exception as e:
+                errores_carga.append(f"{ruta_pdf.name}: {e}")
+        else:
+            rutas_no_encontradas.append(str(ruta_pdf))
+
+    if rutas_no_encontradas:
+        st.warning("⚠️ No se encontraron algunos archivos PDF requeridos para esta lectura.")
+        for ruta in rutas_no_encontradas:
+            st.caption(f"Ruta no encontrada: {ruta}")
+
+    if errores_carga:
+        st.warning("⚠️ Algunos PDF existen, pero no pudieron leerse correctamente.")
+        for err in errores_carga[:5]:
+            st.caption(err)
+
+    if not documentos:
+        return None
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+    )
+    fragmentos = text_splitter.split_documents(documentos)
+
+    vectorstore = Chroma.from_documents(
+        fragmentos,
+        embeddings,
+        persist_directory=str(ruta_indice),
+    )
+
+    try:
+        if hasattr(vectorstore, "persist"):
+            vectorstore.persist()
+    except Exception:
+        pass
+
+    return vectorstore.as_retriever(search_kwargs={"k": TOP_K})
 
 
 indice_existia_antes = existe_indice_rag(identificador_actual)
