@@ -306,59 +306,18 @@ if st.session_state.intentos > MAX_INTENTOS:
     st.stop()
 
 # 10. MOTOR RAG
-@st.cache_resource(show_spinner=False)
-def configurar_motor_rag(rutas, actividad_id):
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model=EMBEDDING_MODEL,
-        google_api_key=st.secrets["GOOGLE_API_KEY"],
-    )
+indice_existia_antes = existe_indice_rag(identificador_actual)
 
-    ruta_indice = obtener_ruta_indice(actividad_id)
-    ruta_indice.parent.mkdir(parents=True, exist_ok=True)
+with st.spinner("Preparando índice RAG de la lectura..."):
+    recuperador_rag = configurar_motor_rag(rutas_archivos, identificador_actual)
 
-    # Si ya existe un índice persistido, lo carga directamente
-    if ruta_indice.exists() and any(ruta_indice.iterdir()):
-        try:
-            vectorstore = Chroma(
-                persist_directory=str(ruta_indice),
-                embedding_function=embeddings,
-            )
-            return vectorstore.as_retriever(search_kwargs={"k": TOP_K})
-        except Exception:
-            pass
-
-    # Si no existe, construye el índice desde cero y lo persiste
-    documentos = []
-    for r in rutas:
-        if os.path.exists(r):
-            try:
-                loader = PyPDFLoader(r)
-                documentos.extend(loader.load())
-            except Exception:
-                continue
-
-    if not documentos:
-        return None
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
-    )
-    fragmentos = text_splitter.split_documents(documentos)
-
-    vectorstore = Chroma.from_documents(
-        fragmentos,
-        embeddings,
-        persist_directory=str(ruta_indice),
-    )
-
-    try:
-        if hasattr(vectorstore, "persist"):
-            vectorstore.persist()
-    except Exception:
-        pass
-
-    return vectorstore.as_retriever(search_kwargs={"k": TOP_K})
+if recuperador_rag:
+    if indice_existia_antes:
+        st.caption("📚 Índice RAG cargado desde almacenamiento local de la app.")
+    else:
+        st.caption("🛠️ Índice RAG construido por primera vez y almacenado localmente en la app.")
+else:
+    st.caption("⚠️ No fue posible construir o cargar el índice RAG para esta lectura.")
 
 
 indice_existia_antes = existe_indice_rag(identificador_actual)
