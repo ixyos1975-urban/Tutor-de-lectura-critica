@@ -7,3 +7,4 @@ langchain-google-genai
 langchain-community
 chromadb
 PyPDF2
+pypdf
