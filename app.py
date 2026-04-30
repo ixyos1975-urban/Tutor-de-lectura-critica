@@ -177,10 +177,15 @@ def generar_con_reintentos(model, historial_envio, max_reintentos=3, esperas=(4,
                 raise ultimo_error
 
 
-def normalizar_nombre_indice(texto):
-    texto = texto.strip().replace(" ", "_")
-    texto = re.sub(r"[^A-Za-z0-9_\-]", "", texto)
-    return texto
+def obtener_ruta_indice(actividad_id):
+    nombre_indice = normalizar_nombre_indice(actividad_id)
+    ruta_base = Path(__file__).resolve().parent / "rag_store"
+    return ruta_base / nombre_indice
+
+
+def existe_indice_rag(actividad_id):
+    ruta_indice = obtener_ruta_indice(actividad_id)
+    return ruta_indice.exists() and any(ruta_indice.iterdir())
 
 
 def obtener_ruta_indice(actividad_id):
