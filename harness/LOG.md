@@ -286,3 +286,64 @@ Sincronizar la referencia del modelo LLM en `README.md` con la configuración ej
 
 ### Estado final
 `DONE`
+
+---
+
+## EXP-MED-001
+
+**Fecha:** 2026-08-17
+**Tipo:** `BUG`
+**Riesgo:** `MEDIUM`
+
+### Objetivo
+Corregir las rutas inválidas del catálogo `PRUEBA` para que resuelvan los PDF existentes sin afectar otros catálogos ni el motor RAG.
+
+### Archivos modificados
+- `catalogo.py` → alinear únicamente las rutas de `Demo_1.pdf` y `Demo_2.pdf` con la estructura real.
+- `harness/CONTEXT.md` → retirar la limitación del catálogo `PRUEBA` después de resolverla.
+- `harness/LOG.md` → registrar la tarea experimental.
+
+### Rules / Guardrails aplicados
+- `RULE-TEC-01`, `RULE-TEC-02`, `RULE-TEC-03`, `RULE-TEC-04`
+- `RULE-PRO-04`, `RULE-PRO-07`, `RULE-PRO-08`, `RULE-PRO-10`
+- `GRD-02`, `GRD-03`
+
+### Decisions consultadas o creadas
+- `DEC-001` y `DEC-002` consultadas.
+- Ninguna decisión creada.
+
+### Workflow
+- `WF-02`
+
+### Validación
+- Reproducción previa → `PASS`; 2 de 24 rutas no resolvían, ambas en `PRUEBA`.
+- `AUTO-01` → `PASS`; importación de `catalogo.py` válida.
+- `AUTO-02` → `PASS`; estructura `CONFIG` accesible.
+- `AUTO-03` → `PASS`; las 24 rutas catalogadas resuelven archivos existentes.
+- `AUTO-04` → `PASS`; cambio funcional limitado al catálogo `PRUEBA`.
+- `ASSIST-01` → `PASS`.
+- `ASSIST-02` → `PASS`.
+- `ASSIST-03` → `PASS`; los otros 22 documentos y catálogos conservan sus rutas válidas.
+- `ASSIST-04` → `PASS`; se retiró del Context la limitación ya resuelta.
+- `TEST-INT-RAG-01` → `NOT_APPLICABLE`; no cambió el motor RAG y la precondición de acceso documental quedó verificada por `AUTO-03`.
+- Diff check → `PASS`.
+- Llamadas API → ninguna.
+
+### Harness Impact
+`CONTEXT`
+
+### Actualización del Harness
+- `harness/CONTEXT.md` actualizado para no conservar como limitación un bug ya resuelto.
+- `harness/LOG.md` actualizado como registro operativo.
+
+### Limitaciones / incidencias
+- No se ejecutó recuperación RAG end-to-end porque la tarea no modificó esa integración y prohíbe llamadas API.
+- El repositorio no contiene una suite automatizada de tests.
+
+### Revisión humana
+- Requerida: `NO`
+- Resultado: `NOT_APPLICABLE`.
+- Observación: tarea `MEDIUM` localizada, con validación automática y asistida sin resultados `REVIEW` ni impacto pedagógico.
+
+### Estado final
+`DONE`

@@ -142,7 +142,6 @@ Antes de cualquier modificación, Codex debe inspeccionar el estado real del có
 - Actualmente no existe una suite automatizada de tests en el checkout inspeccionado.
 - El checkout inspeccionado presenta una discrepancia entre la implementación Gemini y la decisión vigente de adoptar DeepSeek.
 - `rag_store/` es la ubicación prevista para los índices persistidos, pero actualmente solo contiene `README.txt`.
-- El catálogo `PRUEBA` referencia rutas con `Actividad_1`, mientras los archivos observados están bajo `Actividad 1`; la discrepancia fue detectada en `BOOTSTRAP-001` y permanece sin corregir.
 
 ## 12. Estado del Harness
 

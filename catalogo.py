@@ -73,8 +73,8 @@ CONFIG = {
     },
     "PRUEBA": {
         "Actividad_1": {
-            "Demo_1": ["documentos/PRUEBA/Actividad_1/Demo_1.pdf"],
-            "Demo_2": ["documentos/PRUEBA/Actividad_1/Demo_2.pdf"]
+            "Demo_1": ["documentos/PRUEBA/Actividad 1/Demo_1.pdf"],
+            "Demo_2": ["documentos/PRUEBA/Actividad 1/Demo_2.pdf"]
         }
     }
 }
