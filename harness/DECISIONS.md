@@ -308,20 +308,22 @@ Esta alternativa (`OPTION B`) queda pospuesta para una evolución posterior; no 
 - ordinal de alerta;
 - pregunta visible relevante del Tutor;
 - respuesta del estudiante que precede la alerta;
-- respuesta visible relevante del modelo;
+- respuesta externa relevante del modelo;
 - consecuencia aplicada;
 - estados y timestamps de revisión y restauración;
 - `event_id` único.
 
-No se almacenará razonamiento interno del LLM, cadena de pensamiento ni el historial conversacional completo, salvo decisión humana futura expresa. La retención y el acceso deberán observar minimización, necesidad académica y las reglas institucionales aplicables; esta decisión no fija un periodo arbitrario de conservación.
+No se almacenará razonamiento interno del LLM, cadena de pensamiento, contexto RAG, prompts internos ni el historial conversacional completo, salvo decisión humana futura expresa. La retención y el acceso deberán observar minimización, necesidad académica y las reglas institucionales aplicables. Los estudiantes no tendrán acceso directo a `alertas_ia` y esta decisión no fija un periodo arbitrario de conservación ni implementa borrado automático.
 
 **Fail-safe ante fallo de trazabilidad:**
 La evidencia debe registrarse antes de aplicar una consecuencia académica adversa. Si el registro falla, no se aplicará una consecuencia adversa no auditable y el evento se tratará como incidencia técnica.
 
 **Revisión humana por excepción:**
-El canal institucional inicial para solicitar revisión será Moodle y deberá utilizar el `event_id` como referencia del caso. La revisión podrá realizarla el profesor o personal docente expresamente autorizado. No existirá revisión docente previa obligatoria para cada evento.
+El canal institucional inicial para solicitar revisión será Moodle y deberá utilizar el `event_id` como referencia del caso. No se codificará una URL concreta. La revisión podrá realizarla el profesor responsable o personal docente expresamente autorizado, sin incorporar nombres personales en el código. No existirá revisión docente previa obligatoria para cada evento.
 
 El mensaje al estudiante deberá indicar que `[ALERTA_IA]` es una detección automatizada, no constituye prueba infalible, ha generado una consecuencia conforme a la política vigente, posee un `event_id` y puede someterse a revisión excepcional mediante el canal indicado.
+
+Ante la primera alerta podrá mostrarse, después de retirar `[ALERTA_IA]`, el texto externo del modelo que resulte pedagógicamente útil. Ante la segunda alerta se mostrará únicamente el mensaje institucional estandarizado; la respuesta externa relevante del modelo se conservará como evidencia en `alertas_ia`, pero no se mostrará adicionalmente al estudiante.
 
 **Restauración idempotente:**
 Cuando una revisión excepcional determine que la consecuencia no correspondía, el mecanismo deberá:
@@ -331,8 +333,14 @@ Cuando una revisión excepcional determine que la consecuencia no correspondía,
 - operar antes del control de bloqueo por máximo de intentos;
 - conservar auditoría de los valores anterior y posterior y de los estados y timestamps correspondientes.
 
+El contador persistente actual se interpretará como `attempt_raw`. `attempt_effective` será un valor derivado y no una segunda fuente persistente de verdad en la hoja académica principal:
+
+`attempt_effective = attempt_raw - créditos de restauración correspondientes a event_id distintos con estado RESTORED`
+
+Los bloqueos y la interfaz utilizarán `attempt_effective`. Cada `event_id` restaurado aportará como máximo un crédito, lo que impedirá aplicar dos veces la misma restauración.
+
 **Muestreo de control:**
-Se admite auditoría muestral. Como criterio inicial de experimentación se propone revisar aproximadamente el 5 % de los cierres producidos por segunda alerta. El porcentaje deberá permanecer configurable y no constituye una regla pedagógica permanente.
+Se admite auditoría muestral. La tasa inicial será configurable con valor `0.05` y se aplicará únicamente a cierres producidos por segunda alerta. La selección no alterará la consecuencia y no constituye una regla pedagógica permanente.
 
 **Consecuencias:**
 
@@ -347,7 +355,7 @@ Se admite auditoría muestral. Como criterio inicial de experimentación se prop
 Flujo de `[ALERTA_IA]`, Google Sheets, control de intentos, mensajes al estudiante, revisión excepcional, restauración y validación.
 
 **Relaciones:**
-`DEC-007`, `GRD-07`, `TEST-GOV-ADV-01`, `EXP-HIGH-002`.
+`DEC-007`, `GRD-07`, `TEST-GOV-ADV-01`, `EXP-HIGH-002`, `EXP-HIGH-003`.
 
 ---
 

@@ -466,3 +466,65 @@ Diseñar la adecuación funcional mínima del flujo `[ALERTA_IA]` para cumplir `
 
 ### Estado final
 `DONE`
+
+---
+
+## EXP-HIGH-003
+
+**Fecha:** 2026-08-17
+**Tipo:** `IMPLEMENTATION DESIGN / GOVERNANCE`
+**Riesgo:** `HIGH`
+
+### Objetivo
+Convertir `DEC-008` en un contrato de implementación preciso para `OPTION A` antes de modificar el flujo funcional de `[ALERTA_IA]`.
+
+### Resultado
+`IMPLEMENTATION_CONTRACT: APPROVED`.
+
+Se aprobaron el esquema mínimo de `alertas_ia`, la trazabilidad previa a la consecuencia, el contador raw/efectivo, la revisión excepcional mediante Moodle, la restauración idempotente, el muestreo configurable y los mensajes diferenciados para primera y segunda alerta.
+
+### Archivos modificados
+- `harness/DECISIONS.md` → incorporar en `DEC-008` el contrato de implementación aprobado.
+- `harness/LOG.md` → registrar la revisión humana y el cierre de `EXP-HIGH-003`.
+
+### Rules / Guardrails aplicados
+- `RULE-TEC-03`, `RULE-TEC-04`, `RULE-PRO-06`, `RULE-PRO-08`, `RULE-PRO-09`
+- `GRD-02`, `GRD-03`, `GRD-04`, `GRD-06`, `GRD-07`
+
+### Decisions consultadas o actualizadas
+- `DEC-007` consultada.
+- `DEC-008` actualizada; permanece `VIGENTE` y con estado de implementación `PENDIENTE`.
+
+### Workflow
+- `WF-03`
+- `WF-07`
+
+### Validación
+- Contrato aprobado incorporado sin cambiar la política operacional → `PASS`.
+- Consistencia `DEC-008` / `DEC-007` / `GRD-07` / `TEST-GOV-ADV-01` → `PASS`.
+- Contador `attempt_raw` y derivación de `attempt_effective` documentados → `PASS`.
+- Primera y segunda alerta diferenciadas en evidencia y mensaje → `PASS`.
+- Moodle sin URL hardcodeada y revisores sin nombres personales → `PASS`.
+- Muestreo `0.05`, configurable y limitado a cierres por segunda alerta → `PASS`.
+- Minimización y acceso restringido documentados → `PASS`.
+- Código, tests y Google Sheets sin modificaciones → `PASS`.
+- Llamadas API → ninguna.
+
+### Harness Impact
+`DECISION`
+
+### Actualización del Harness
+- Decisions y Log.
+
+### Limitaciones / incidencias
+- El flujo funcional continúa pendiente de implementación y validación `HIGH`.
+- La política temporal definitiva de retención permanece pendiente de definición institucional y no bloquea el contrato aprobado.
+- La ubicación operativa concreta dentro de Moodle y la identificación administrativa de revisores autorizados deberán definirse fuera del código.
+
+### Revisión humana
+- Requerida: `YES`
+- Resultado: `APPROVED`.
+- Observación: `IMPLEMENTATION_CONTRACT: APPROVED`.
+
+### Estado final
+`DONE`
