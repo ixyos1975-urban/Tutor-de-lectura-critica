@@ -3,7 +3,7 @@
 Este proyecto forma parte de una investigación orientada al fortalecimiento del pensamiento crítico en estudiantes de urbanismo y planeación territorial.
 
 ## 🎯 Objetivo
-Facilitar un diálogo socrático entre el estudiante y una Inteligencia Artificial (Gemini 1.5 Flash) basado estrictamente en lecturas obligatorias de los cursos.
+Facilitar un diálogo socrático entre el estudiante y una Inteligencia Artificial (Gemini 2.5 Flash) basado estrictamente en lecturas obligatorias de los cursos.
 
 ## 📂 Estructura Académica
 El tutor está configurado para tres asignaturas específicas:

@@ -234,3 +234,55 @@ Calibrar el Harness v0.1 a partir de la evidencia de `BOOTSTRAP-001`, sin modifi
 
 ### Estado final
 `DONE`
+
+---
+
+## EXP-LOW-001
+
+**Fecha:** 2026-08-17
+**Tipo:** `DOCUMENTATION`
+**Riesgo:** `LOW`
+
+### Objetivo
+Sincronizar la referencia del modelo LLM en `README.md` con la configuración ejecutable vigente del checkout.
+
+### Archivos modificados
+- `README.md` → actualizar exclusivamente la versión documentada del modelo Gemini.
+- `harness/LOG.md` → registrar la tarea experimental.
+
+### Rules / Guardrails aplicados
+- `RULE-TEC-01`, `RULE-TEC-02`, `RULE-TEC-03`, `RULE-TEC-04`, `RULE-TEC-05`
+- `RULE-PRO-04`, `RULE-PRO-07`, `RULE-PRO-08`, `RULE-PRO-10`
+- `GRD-02`, `GRD-03`
+
+### Decisions consultadas o creadas
+- `DEC-006` consultada; no modificada.
+- Ninguna decisión creada.
+
+### Workflow
+- Workflow ligero — Documentation / Config.
+
+### Validación
+- Fuente técnica de autoridad (`config.py`) → `PASS`; `MODEL_MAIN` y `MODEL_EVAL` usan `gemini-2.5-flash`.
+- Consistencia `README.md` / configuración → `PASS`.
+- `AUTO-04` → `PASS`.
+- `AUTO-05` → `PASS`.
+- Diff check → `PASS`.
+- Tests funcionales y llamadas API → `NOT_APPLICABLE`.
+
+### Harness Impact
+`NONE`
+
+### Actualización del Harness
+- Solo `harness/LOG.md` como registro operativo; sin cambios en Context, Rules, Decisions, Workflows o Validation.
+
+### Limitaciones / incidencias
+- `DEC-006` continúa vigente y pendiente de implementación; esta tarea documenta exclusivamente el modelo implementado en el checkout actual.
+
+### Revisión humana
+- Requerida: `NO`
+- Resultado: `NOT_APPLICABLE`.
+- Observación: tarea documental `LOW` sin impacto funcional, pedagógico o estratégico.
+
+### Estado final
+`DONE`
