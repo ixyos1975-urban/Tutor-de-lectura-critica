@@ -167,6 +167,48 @@ En v0.1:
 
 ---
 
+## TEST-GOV-AUTO-01 — Decisión académica automatizada de alto impacto
+
+Aplicar cuando una evaluación, aprobación, calificación, bloqueo u otra decisión automatizada produzca un efecto académico relevante.
+
+Comprobar como mínimo:
+
+1. existencia de política o criterio explícito que autorice y delimite la automatización;
+2. trazabilidad del evento, entradas relevantes y resultado automatizado;
+3. identificación concreta de la consecuencia producida;
+4. posibilidad efectiva de revisión humana;
+5. intervención humana obligatoria cuando la decisión sea crítica, sancionatoria, excepcional o controvertida.
+
+Resultado:
+`PASS / FAIL / REVIEW`
+
+Relacionados:
+`GRD-04`, `RULE-PRO-09`, `HUMAN-01`.
+
+---
+
+## TEST-GOV-ADV-01 — Acción adversa derivada de inferencia automatizada
+
+Aplicar cuando una inferencia automatizada, incluida `[ALERTA_IA]`, pueda reducir intentos, bloquear acceso, invalidar una actividad, afectar una calificación o producir otra consecuencia académica adversa.
+
+Comprobar como mínimo:
+
+1. existencia de política o criterio explícito para la inferencia y la acción asociada;
+2. trazabilidad del evento y de la inferencia que lo originó;
+3. consecuencia exacta producida o prevista;
+4. mecanismo accesible de revisión humana;
+5. ausencia de una sanción irreversible basada únicamente en inferencia LLM.
+
+Si la acción produce una consecuencia académica adversa, clasificar la tarea o cambio como `HIGH` y exigir revisión humana.
+
+Resultado:
+`PASS / FAIL / REVIEW`
+
+Relacionados:
+`GRD-07`, `RULE-PRO-09`, `HUMAN-01`, `HUMAN-04`.
+
+---
+
 # 4. Nivel B — Validación asistida
 
 ## ASSIST-01 — Rule Check
@@ -448,6 +490,8 @@ Requiere:
 Estado máximo antes de revisión humana:
 
 `READY_FOR_REVIEW`
+
+También se clasifican como `HIGH` los cambios que permitan consecuencias académicas adversas derivadas de inferencias automatizadas.
 
 ---
 

@@ -130,3 +130,107 @@ Existe una discrepancia entre la decisión vigente de utilizar DeepSeek y las re
 
 ### Estado final
 `READY_FOR_REVIEW`
+
+---
+
+## BOOTSTRAP-001
+
+**Fecha:** 2026-08-17
+**Tipo:** `DOCUMENTATION / VALIDATION`
+**Riesgo:** `HIGH`
+
+### Objetivo
+Comprobar que el Harness v0.1 puede leerse, aplicarse y contrastarse con el estado real del repositorio sin modificar el proyecto.
+
+### Archivos modificados
+- Ninguno.
+
+### Rules / Guardrails aplicados
+- `RULE-TEC-01`, `RULE-TEC-02`, `RULE-PRO-07`, `RULE-PRO-10`
+- `GRD-02`, `GRD-03`
+
+### Decisions consultadas o creadas
+- `DEC-001` a `DEC-006` consultadas.
+- Ninguna decisión creada.
+
+### Workflow
+- `WF-CTX-01`
+
+### Validación
+- Harness readability → `PASS`
+- Repository inspection → `PASS`
+- Rule traceability → `PASS`
+- Decision traceability → `PASS`
+- Drift detection → `PASS`
+- Non-modification control → `PASS`
+- Harness calibration needed → `YES`
+
+### Harness Impact
+`NONE`
+
+### Limitaciones / incidencias
+- Se detectaron desalineaciones documentales, normativas y técnicas que requieren calibración y revisión humana.
+
+### Revisión humana
+- Requerida: `YES`
+- Resultado: pendiente.
+- Observación: revisar la calibración normativa derivada de los hallazgos.
+
+### Estado final
+`REVIEW_REQUIRED`
+
+---
+
+## HARNESS-CAL-001
+
+**Fecha:** 2026-08-17
+**Tipo:** `DOCUMENTATION / HARNESS CALIBRATION`
+**Riesgo:** `HIGH`
+
+### Objetivo
+Calibrar el Harness v0.1 a partir de la evidencia de `BOOTSTRAP-001`, sin modificar el código ni la configuración funcional del Tutor.
+
+### Archivos modificados
+- `harness/CONTEXT.md` → actualizar el mapa canónico y registrar el estado observado.
+- `harness/RULES.md` → delimitar la automatización académica y proteger frente a acciones adversas automatizadas.
+- `harness/DECISIONS.md` → registrar el estado de implementación pendiente de `DEC-006`.
+- `harness/VALIDATION.md` → añadir validaciones de decisiones automatizadas de alto impacto y acciones adversas.
+- `harness/LOG.md` → registrar `BOOTSTRAP-001` y esta calibración.
+
+### Rules / Guardrails aplicados
+- `RULE-TEC-02`, `RULE-TEC-03`, `RULE-TEC-04`, `RULE-PRO-06`, `RULE-PRO-07`, `RULE-PRO-08`, `RULE-PRO-09`
+- `GRD-02`, `GRD-03`, `GRD-04`, `GRD-06`, `GRD-07`
+
+### Decisions consultadas o creadas
+- `DEC-001` a `DEC-006` consultadas.
+- `DEC-006` complementada sin cambiar su estado `VIGENTE`.
+
+### Workflow
+- `WF-07`
+- `WF-CTX-01`
+
+### Validación
+- `AUTO-04` → `PASS`; el diff contiene únicamente los cinco archivos autorizados dentro de `harness/`.
+- `AUTO-05` → `PASS`; referencias internas de identificadores y rutas comprobadas.
+- `ASSIST-01` → `REVIEW`
+- `ASSIST-02` → `REVIEW`
+- `ASSIST-04` → `PASS`
+
+### Harness Impact
+`MULTIPLE`
+
+### Actualización del Harness
+- Context, Rules, Decisions, Validation y Log.
+
+### Limitaciones / incidencias
+- No se corrigió la discrepancia de rutas del catálogo `PRUEBA`.
+- No se implementó DeepSeek.
+- No se modificaron `[DICTAMEN_APROBADO]`, `[ALERTA_IA]` ni el código del Tutor.
+
+### Revisión humana
+- Requerida: `YES`
+- Resultado: `APPROVED`.
+- Observación: el profesor aprobó `GRD-04`, `GRD-07`, `TEST-GOV-AUTO-01`, `TEST-GOV-ADV-01` y la actualización de `DEC-006`. La revisión humana no implica aprobación docente previa de toda automatización académica ordinaria; es obligatoria cuando la decisión sea crítica, sancionatoria, excepcional, controvertida o produzca una consecuencia académica adversa relevante.
+
+### Estado final
+`DONE`

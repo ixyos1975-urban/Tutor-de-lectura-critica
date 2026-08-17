@@ -177,6 +177,8 @@ Proceso de desarrollo completo.
 
 **Estado:** VIGENTE
 
+**Estado de implementación:** PENDIENTE EN EL CHECKOUT INSPECCIONADO
+
 **Título:** Sustituir Gemini por DeepSeek como proveedor LLM del proyecto.
 
 **Problema:**  
@@ -211,7 +213,7 @@ Integración LLM, configuración, secretos, manejo de errores, tests de integrac
 Uso operativo de Gemini.
 
 **Observación de consistencia:**  
-La rama pública `main` consultada durante la construcción inicial del Harness todavía contiene referencias operativas a Gemini. Antes de intervenir la integración LLM debe verificarse y sincronizarse el estado técnico real del repositorio o despliegue vigente.
+`BOOTSTRAP-001` verificó que la implementación del checkout inspeccionado continúa utilizando Gemini para generación, evaluación y embeddings, y que no existe una implementación ejecutable de DeepSeek. Antes de intervenir la integración LLM debe verificarse y sincronizarse el estado técnico real del checkout y del despliegue vigente.
 
 ---
 

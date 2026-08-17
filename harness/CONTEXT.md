@@ -20,20 +20,32 @@ Apoya la formalización de necesidades, la traducción entre intención pedagóg
 ### Codex
 Inspecciona el repositorio, confirma o corrige hipótesis técnicas, implementa cambios, ejecuta verificaciones y reporta resultados dentro de los límites definidos por el Harness.
 
-## 3. Arquitectura técnica observada en el repositorio público
+## 3. Arquitectura técnica observada en el repositorio
 
-La rama pública `main` consultada contiene actualmente:
+El estado técnico debe comprobarse en el checkout que se esté inspeccionando. Ese checkout puede encontrarse en una rama distinta de `main`; por tanto, este contexto no presupone una rama fija como estado universal del proyecto.
+
+El checkout inspeccionado durante `BOOTSTRAP-001` contiene:
 
 - `app.py`: orquestación principal de la aplicación Streamlit, sesión, persistencia, RAG, interacción con el LLM y evaluación.
 - `config.py`: parámetros generales de la aplicación, control académico, tiempos, modelos y parámetros RAG.
 - `catalogo.py`: estructura académica de asignaturas, actividades, sesiones y lecturas.
 - `prompts.py`: construcción de instrucciones pedagógicas y de evaluación.
 - `documentos/`: corpus académico en PDF.
-- `rag_store/`: almacenamiento de índices RAG persistidos.
+- `rag_store/`: ubicación prevista para persistir índices RAG; en el checkout inspeccionado contiene actualmente solo `README.txt`.
 - `requirements.txt`: dependencias Python.
 - `README.md`: documentación general del proyecto.
 
 La aplicación utiliza Streamlit y Python. La persistencia académica observada se apoya en Google Sheets mediante `gspread`. El estado temporal se maneja mediante `st.session_state`.
+
+Como mapa funcional de alto nivel, `app.py` también concentra controles relevantes de:
+
+- aprobación mediante `[DICTAMEN_APROBADO]`;
+- evaluación LLM secundaria y persistencia de nota y retroalimentación;
+- generación de código y reporte de validación;
+- límites, consumo y bloqueo de intentos;
+- inactividad y tratamiento de saturación del proveedor;
+- acceso por dominio institucional;
+- detección de posible uso de IA mediante `[ALERTA_IA]`.
 
 ## 4. Arquitectura pedagógica
 
@@ -66,22 +78,22 @@ Las decisiones históricas sobre persistencia y conservación del RAG deben cons
 ### Decisión vigente del proyecto
 El proveedor LLM vigente definido por el proyecto es **DeepSeek**, adoptado por razones de reducción de costos operativos.
 
-### Estado observado en la rama pública consultada
-La rama pública `main` consultada todavía contiene referencias operativas a **Google Gemini**, incluyendo:
+### Estado observado en el checkout inspeccionado
+`BOOTSTRAP-001` verificó que el checkout inspeccionado todavía contiene referencias operativas a **Google Gemini**, incluyendo:
 
 - importación y configuración de `google.generativeai` en `app.py`;
 - uso de `GoogleGenerativeAIEmbeddings`;
 - constantes de modelos Gemini en `config.py`;
 - referencias a Gemini en el `README.md`.
 
-Por tanto, existe una discrepancia entre la **decisión vigente del proyecto** y el **estado técnico observado en el repositorio público**.
+Por tanto, existe una discrepancia entre la **decisión vigente del proyecto** y el **estado técnico observado en el checkout**.
 
 ### Clasificación provisional
 `TECHNICAL_INCONSISTENCY / STALE_DOCUMENTATION`
 
-Antes de cualquier intervención relacionada con el LLM debe verificarse cuál es el repositorio o rama realmente desplegada y sincronizar este contexto con la implementación efectiva.
+Antes de cualquier intervención relacionada con el LLM debe verificarse cuál es el checkout y despliegue realmente vigentes y sincronizar este contexto con la implementación efectiva.
 
-No asumir que Gemini sigue siendo el proveedor vigente solo porque aparece en la rama pública, ni asumir que DeepSeek ya está implementado en esa rama sin verificar el código real.
+No asumir que Gemini sigue siendo el proveedor decidido solo porque aparece en un checkout, ni asumir que DeepSeek ya está implementado sin verificar el código real.
 
 ## 7. Configuración operativa
 
@@ -127,13 +139,15 @@ Antes de cualquier modificación, Codex debe inspeccionar el estado real del có
 
 - Parte importante de la orquestación sigue concentrada en `app.py`.
 - La validación funcional y pedagógica todavía depende en buena medida de pruebas humanas.
-- El repositorio público consultado presenta una discrepancia respecto del proveedor LLM vigente reportado para el proyecto.
-- El Harness v0.1 está en construcción; algunos documentos referenciados por `AGENTS.md` aún pueden no existir hasta completar el Hito 5.
+- Actualmente no existe una suite automatizada de tests en el checkout inspeccionado.
+- El checkout inspeccionado presenta una discrepancia entre la implementación Gemini y la decisión vigente de adoptar DeepSeek.
+- `rag_store/` es la ubicación prevista para los índices persistidos, pero actualmente solo contiene `README.txt`.
+- El catálogo `PRUEBA` referencia rutas con `Actividad_1`, mientras los archivos observados están bajo `Actividad 1`; la discrepancia fue detectada en `BOOTSTRAP-001` y permanece sin corregir.
 
 ## 12. Estado del Harness
 
-**Versión:** 0.1 — construcción inicial.
+**Versión:** 0.1 — materialmente completa.
 
-**Fase actual:** materialización de la arquitectura TO-BE definida y auditada previamente.
+**Fase actual:** calibración experimental y revisión humana del paquete materializado.
 
-**Última revisión conceptual:** 2026-08-16.
+**Última revisión conceptual:** 2026-08-17.

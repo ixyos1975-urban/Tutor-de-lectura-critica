@@ -126,9 +126,11 @@ Codex no debe modificar componentes no relacionados con la tarea salvo que exist
 
 Una corrección puntual no debe utilizarse como oportunidad para realizar refactorizaciones estructurales no solicitadas.
 
-## GRD-04 — No sustituir juicio pedagógico final
+## GRD-04 — Automatización académica y juicio humano
 
-Una decisión automatizada no debe reemplazar el juicio pedagógico final del profesor cuando el criterio sea académico, evaluativo o formativo.
+Las evaluaciones, retroalimentaciones y registros automatizados pueden operar cuando estén explícitamente previstos por el diseño pedagógico, tengan criterios identificables y conserven trazabilidad suficiente.
+
+Las decisiones académicas críticas, sancionatorias, excepcionales o controvertidas no deben quedar resueltas únicamente por una inferencia automatizada. Estos casos requieren posibilidad efectiva de revisión humana y deben mantener bajo responsabilidad del profesor el juicio pedagógico final.
 
 ## GRD-05 — Evitar acoplamiento innecesario al proveedor LLM
 
@@ -143,6 +145,10 @@ Si una implementación entra en conflicto con una regla normativa:
 1. marcar `FAIL` o `REVIEW`;
 2. escalar a revisión humana;
 3. solo modificar la regla si existe una decisión humana explícita que cambie el criterio.
+
+## GRD-07 — Protección ante acciones adversas automatizadas
+
+Una inferencia automatizada, incluida la detección de posible uso de IA, no debe producir por sí sola una consecuencia académica adversa irreversible sin política explícita, trazabilidad y posibilidad de revisión humana.
 
 ---
 
