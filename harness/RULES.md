@@ -148,7 +148,17 @@ Si una implementación entra en conflicto con una regla normativa:
 
 ## GRD-07 — Protección ante acciones adversas automatizadas
 
-Una inferencia automatizada, incluida la detección de posible uso de IA, no debe producir por sí sola una consecuencia académica adversa irreversible sin política explícita, trazabilidad y posibilidad de revisión humana.
+Una inferencia automatizada, incluida la detección de posible uso de IA, puede producir una consecuencia académica previamente definida cuando existan:
+
+1. una política explícita que delimite la inferencia y la consecuencia;
+2. aplicación uniforme de la política;
+3. trazabilidad suficiente para reconstruir el evento;
+4. posibilidad efectiva de revisión humana por excepción;
+5. un mecanismo de corrección, reversión o restauración cuando corresponda.
+
+La revisión humana por excepción puede activarse, entre otros casos, por solicitud del estudiante, controversia, inconsistencia detectada, incidencia técnica o muestreo de control. No constituye una autorización docente previa obligatoria para cada alerta o consecuencia automatizada.
+
+La inferencia automatizada es un criterio operacional del sistema, no una prueba infalible de uso indebido de IA. La aplicación uniforme reduce variabilidad procedimental, pero no implica ausencia absoluta de errores o sesgos.
 
 ---
 

@@ -217,6 +217,54 @@ Uso operativo de Gemini.
 
 ---
 
+## DEC-007 — Gobernanza de alertas automatizadas de posible uso de IA
+
+**Estado:** VIGENTE
+
+**Estado de implementación:** PENDIENTE DE ADECUACIÓN DEL FLUJO ACTUAL
+
+**Problema:**
+La revisión humana previa de cada alerta no es escalable para el volumen de estudiantes y debilitaría la autonomía operativa prevista para el Tutor.
+
+**Decisión:**
+Mantener la posibilidad de aplicar automáticamente consecuencias previamente definidas ante `[ALERTA_IA]`, con aplicación uniforme, trazabilidad suficiente, revisión humana por excepción y capacidad de corrección o restauración cuando corresponda.
+
+La revisión humana por excepción puede activarse, entre otros casos, por solicitud del estudiante, controversia, inconsistencia detectada, incidencia técnica o muestreo de control. No se requiere autorización docente previa para cada evento automatizado.
+
+**Razones:**
+
+- escalabilidad;
+- consistencia procedimental;
+- reducción de variabilidad entre evaluadores;
+- autonomía del ejercicio;
+- necesidad de auditabilidad y corrección.
+
+**Alcance y límites:**
+
+- `[ALERTA_IA]` es un criterio operacional y no constituye prueba infalible de uso indebido de IA;
+- la aplicación uniforme no debe presentarse como ausencia absoluta de errores o sesgos;
+- cada consecuencia debe ser trazable hasta el evento que la originó;
+- debe existir posibilidad efectiva de revisión humana por excepción;
+- debe existir capacidad de corrección, reversión o restauración cuando una revisión determine que la consecuencia no correspondía;
+- pueden emplearse auditorías muestrales para evaluar el comportamiento y la consistencia del sistema.
+
+**Consecuencias:**
+
+- el flujo funcional vigente debe evaluarse y adecuarse antes de considerar implementada esta decisión;
+- la automatización puede mantenerse sin revisión docente previa de cada alerta;
+- los futuros cambios sobre `[ALERTA_IA]` deben aplicar `TEST-GOV-ADV-01` y clasificarse como `HIGH` cuando produzcan consecuencias académicas adversas.
+
+**Componentes afectados:**
+Gobernanza pedagógica, alertas automatizadas, persistencia de trazas, revisión por excepción, corrección de consecuencias y validación.
+
+**Reglas y validaciones relacionadas:**
+`GRD-07`, `TEST-GOV-ADV-01`.
+
+**Evidencia de origen:**
+`EXP-HIGH-001`.
+
+---
+
 # Regla para nuevas decisiones
 
 Debe crearse un nuevo Decision Record cuando un desarrollador futuro pueda preguntarse razonablemente:

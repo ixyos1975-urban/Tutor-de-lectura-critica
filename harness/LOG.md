@@ -347,3 +347,63 @@ Corregir las rutas inválidas del catálogo `PRUEBA` para que resuelvan los PDF 
 
 ### Estado final
 `DONE`
+
+---
+
+## HARNESS-CAL-002
+
+**Fecha:** 2026-08-17
+**Tipo:** `PEDAGOGY / GOVERNANCE`
+**Riesgo:** `HIGH`
+
+### Objetivo
+Recalibrar la gobernanza de `[ALERTA_IA]` a partir de `EXP-HIGH-001` y de la decisión humana sobre escalabilidad, autonomía operativa y revisión por excepción.
+
+### Archivos modificados
+- `harness/RULES.md` → recalibrar `GRD-07`.
+- `harness/DECISIONS.md` → crear `DEC-007`.
+- `harness/VALIDATION.md` → recalibrar `TEST-GOV-ADV-01`.
+- `harness/LOG.md` → registrar la calibración.
+
+### Rules / Guardrails aplicados
+- `RULE-TEC-03`, `RULE-TEC-04`, `RULE-PRO-06`, `RULE-PRO-08`, `RULE-PRO-09`
+- `GRD-02`, `GRD-03`, `GRD-04`, `GRD-06`, `GRD-07`
+
+### Decisions consultadas o creadas
+- `DEC-007` creada con estado `VIGENTE`.
+- Estado de implementación: `PENDIENTE DE ADECUACIÓN DEL FLUJO ACTUAL`.
+
+### Workflow
+- `WF-03`
+- `WF-07`
+
+### Validación
+- `AUTO-04` → `PASS`; cambios limitados a los cuatro archivos autorizados.
+- `AUTO-05` → `PASS`; referencias internas verificadas.
+- Coherencia `GRD-07` / `DEC-007` / `TEST-GOV-ADV-01` → `PASS`.
+- Preservación de `GRD-04` → `PASS`.
+- Ausencia de revisión humana previa obligatoria por evento → `PASS`.
+- Inferencia LLM no presentada como prueba infalible ni libre de sesgos → `PASS`.
+- Código funcional sin modificaciones → `PASS`.
+- `ASSIST-01` → `REVIEW`; cambio normativo pendiente de aprobación humana.
+- `ASSIST-02` → `REVIEW`; guardrail pendiente de aprobación humana.
+- `ASSIST-04` → `PASS`.
+- Llamadas API → ninguna.
+
+### Harness Impact
+`MULTIPLE`
+
+### Actualización del Harness
+- Rules, Decisions, Validation y Log.
+
+### Limitaciones / incidencias
+- El flujo funcional actual de `[ALERTA_IA]` no fue modificado y permanece pendiente de adecuación y validación frente a la política recalibrada.
+- `EXP-HIGH-001` se conserva como evidencia histórica de origen.
+
+### Revisión humana
+- Requerida: `YES`
+- Resultado: `APPROVED`.
+- Observación: el profesor aprobó `GRD-07`, `DEC-007` y `TEST-GOV-ADV-01` con una precisión de redacción. Las tareas o modificaciones `HIGH` del sistema requieren revisión humana antes de su cierre; los eventos operativos individuales se someten a revisión humana por excepción conforme a `GRD-07` y `DEC-007`.
+
+### Estado final
+`DONE`

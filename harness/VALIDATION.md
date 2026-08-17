@@ -191,21 +191,41 @@ Relacionados:
 
 Aplicar cuando una inferencia automatizada, incluida `[ALERTA_IA]`, pueda reducir intentos, bloquear acceso, invalidar una actividad, afectar una calificación o producir otra consecuencia académica adversa.
 
-Comprobar como mínimo:
+Evaluar cada criterio como `PASS`, `FAIL`, `REVIEW` o `NOT_APPLICABLE`:
 
-1. existencia de política o criterio explícito para la inferencia y la acción asociada;
-2. trazabilidad del evento y de la inferencia que lo originó;
-3. consecuencia exacta producida o prevista;
-4. mecanismo accesible de revisión humana;
-5. ausencia de una sanción irreversible basada únicamente en inferencia LLM.
+### CRITERION 1 — POLICY
 
-Si la acción produce una consecuencia académica adversa, clasificar la tarea o cambio como `HIGH` y exigir revisión humana.
+Existe una política explícita que delimita la inferencia automatizada, sus condiciones de aplicación y la consecuencia asociada.
+
+### CRITERION 2 — TRACEABILITY
+
+Se conserva evidencia suficiente para reconstruir el evento, la inferencia que lo originó y la consecuencia aplicada.
+
+### CRITERION 3 — PREDEFINED_CONSEQUENCE
+
+La consecuencia está definida antes del evento y la misma política se aplica de manera uniforme a casos equivalentes.
+
+La uniformidad procedimental no debe interpretarse como prueba de ausencia de errores o sesgos.
+
+### CRITERION 4 — EXCEPTION_REVIEW
+
+Existe un mecanismo efectivo de revisión humana por excepción, activable, entre otros casos, por solicitud del estudiante, controversia, inconsistencia detectada, incidencia técnica o muestreo de control.
+
+Este criterio no exige revisión humana previa de todos los eventos ni autorización docente individual antes de aplicar cada consecuencia automatizada.
+
+### CRITERION 5 — CORRECTABILITY
+
+La consecuencia puede corregirse, revertirse o restaurarse cuando una revisión determine que no correspondía.
+
+Cuando una tarea o modificación del sistema afecte el tratamiento de consecuencias académicas adversas automatizadas, debe clasificarse como `HIGH` y requerir revisión humana antes de su cierre.
+
+Los eventos individuales producidos durante la operación normal del Tutor se rigen por el mecanismo de revisión humana por excepción definido en `GRD-07` y `DEC-007`.
 
 Resultado:
-`PASS / FAIL / REVIEW`
+`PASS / FAIL / REVIEW / NOT_APPLICABLE`
 
 Relacionados:
-`GRD-07`, `RULE-PRO-09`, `HUMAN-01`, `HUMAN-04`.
+`GRD-07`, `DEC-007`, `RULE-PRO-09`, `HUMAN-01`, `HUMAN-04`.
 
 ---
 
