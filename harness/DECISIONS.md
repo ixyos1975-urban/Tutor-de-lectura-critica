@@ -265,6 +265,92 @@ Gobernanza pedagógica, alertas automatizadas, persistencia de trazas, revisión
 
 ---
 
+## DEC-008 — Implementación v0.1 de trazabilidad y revisión excepcional de alertas automatizadas
+
+**Estado:** VIGENTE
+
+**Estado de implementación:** PENDIENTE
+
+**Problema:**
+El flujo actual de `[ALERTA_IA]` aplica una advertencia ante la primera alerta y anula automáticamente el intento ante la segunda, pero no conserva una traza suficiente del evento, no ofrece un mecanismo operativo de revisión humana por excepción y no permite restaurar de forma controlada el intento consumido.
+
+La revisión docente previa de cada alerta no es compatible con la escala ni con la autonomía operativa previstas para el Tutor. Al mismo tiempo, una consecuencia académica adversa no debe aplicarse si el evento que la origina no puede auditarse.
+
+**Decisión:**
+Implementar para la versión v0.1 la alternativa mínima aprobada en `EXP-HIGH-002` (`OPTION A`): reutilizar el Google Spreadsheet existente mediante una hoja separada destinada a eventos de alerta.
+
+Se mantiene la secuencia operacional previamente definida:
+
+- primera `[ALERTA_IA]` → advertencia;
+- segunda `[ALERTA_IA]` → anulación automática del intento.
+
+Cada alerta tendrá un `event_id` único. La evidencia mínima deberá persistirse antes de aplicar una consecuencia académica adversa. La revisión humana operará únicamente por excepción y no como autorización docente previa obligatoria.
+
+**Razones para escoger Google Sheets:**
+
+- reutiliza la infraestructura de persistencia ya disponible;
+- evita introducir para v0.1 una nueva base de datos, servicio, panel o dependencia;
+- permite localizar casos por `event_id` y revisar solo solicitudes, controversias, incidencias o muestras seleccionadas;
+- reduce la complejidad, la carga administrativa y el riesgo de regresión;
+- ofrece trazabilidad y restauración suficientes para la etapa experimental si se implementan controles de consistencia e idempotencia.
+
+**Alternativa considerada:**
+Una solución más robusta con persistencia transaccional dedicada, tablas de eventos y revisiones, roles, interfaz estudiantil y panel docente.
+
+Esta alternativa (`OPTION B`) queda pospuesta para una evolución posterior; no queda descartada. Deberá reconsiderarse si el volumen, la concurrencia, los requisitos institucionales de datos o la frecuencia de revisiones superan las capacidades operativas de Google Sheets.
+
+**Datos mínimos:**
+
+- estudiante;
+- asignatura y actividad;
+- intento;
+- fecha y hora;
+- ordinal de alerta;
+- pregunta visible relevante del Tutor;
+- respuesta del estudiante que precede la alerta;
+- respuesta visible relevante del modelo;
+- consecuencia aplicada;
+- estados y timestamps de revisión y restauración;
+- `event_id` único.
+
+No se almacenará razonamiento interno del LLM, cadena de pensamiento ni el historial conversacional completo, salvo decisión humana futura expresa. La retención y el acceso deberán observar minimización, necesidad académica y las reglas institucionales aplicables; esta decisión no fija un periodo arbitrario de conservación.
+
+**Fail-safe ante fallo de trazabilidad:**
+La evidencia debe registrarse antes de aplicar una consecuencia académica adversa. Si el registro falla, no se aplicará una consecuencia adversa no auditable y el evento se tratará como incidencia técnica.
+
+**Revisión humana por excepción:**
+El canal institucional inicial para solicitar revisión será Moodle y deberá utilizar el `event_id` como referencia del caso. La revisión podrá realizarla el profesor o personal docente expresamente autorizado. No existirá revisión docente previa obligatoria para cada evento.
+
+El mensaje al estudiante deberá indicar que `[ALERTA_IA]` es una detección automatizada, no constituye prueba infalible, ha generado una consecuencia conforme a la política vigente, posee un `event_id` y puede someterse a revisión excepcional mediante el canal indicado.
+
+**Restauración idempotente:**
+Cuando una revisión excepcional determine que la consecuencia no correspondía, el mecanismo deberá:
+
+- devolver exactamente el intento consumido;
+- ejecutarse una sola vez;
+- operar antes del control de bloqueo por máximo de intentos;
+- conservar auditoría de los valores anterior y posterior y de los estados y timestamps correspondientes.
+
+**Muestreo de control:**
+Se admite auditoría muestral. Como criterio inicial de experimentación se propone revisar aproximadamente el 5 % de los cierres producidos por segunda alerta. El porcentaje deberá permanecer configurable y no constituye una regla pedagógica permanente.
+
+**Consecuencias:**
+
+- el flujo funcional actual continúa sin cumplir completamente esta decisión hasta que se implemente y valide la adecuación;
+- los eventos deberán persistirse en una hoja separada del registro académico principal;
+- una falla de trazabilidad deberá impedir la consecuencia adversa correspondiente;
+- la corrección de una consecuencia requerirá restauración auditable e idempotente;
+- la operación ordinaria conservará la automatización y la revisión humana por excepción;
+- la implementación deberá clasificarse como `HIGH` y requerirá revisión humana antes de su cierre.
+
+**Componentes afectados:**
+Flujo de `[ALERTA_IA]`, Google Sheets, control de intentos, mensajes al estudiante, revisión excepcional, restauración y validación.
+
+**Relaciones:**
+`DEC-007`, `GRD-07`, `TEST-GOV-ADV-01`, `EXP-HIGH-002`.
+
+---
+
 # Regla para nuevas decisiones
 
 Debe crearse un nuevo Decision Record cuando un desarrollador futuro pueda preguntarse razonablemente:

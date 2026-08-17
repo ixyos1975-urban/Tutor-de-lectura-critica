@@ -407,3 +407,62 @@ Recalibrar la gobernanza de `[ALERTA_IA]` a partir de `EXP-HIGH-001` y de la dec
 
 ### Estado final
 `DONE`
+
+---
+
+## EXP-HIGH-002
+
+**Fecha:** 2026-08-17
+**Tipo:** `ARCHITECTURE / PEDAGOGY / GOVERNANCE DESIGN`
+**Riesgo:** `HIGH`
+
+### Objetivo
+Diseñar la adecuación funcional mínima del flujo `[ALERTA_IA]` para cumplir `GRD-07`, `DEC-007` y `TEST-GOV-ADV-01`, manteniendo la consecuencia automatizada, la autonomía operativa y la revisión humana por excepción.
+
+### Resultado
+`OPTION A SELECTED`: reutilizar Google Sheets mediante una hoja separada de eventos, con `event_id`, trazabilidad previa a la consecuencia adversa, fail-safe, revisión excepcional por Moodle y restauración idempotente.
+
+### Archivos modificados
+- `harness/DECISIONS.md` → crear `DEC-008` con la decisión funcional aprobada y estado de implementación pendiente.
+- `harness/LOG.md` → registrar la aprobación humana y el cierre de `EXP-HIGH-002`.
+
+### Rules / Guardrails aplicados
+- `RULE-TEC-03`, `RULE-TEC-04`, `RULE-PRO-06`, `RULE-PRO-08`, `RULE-PRO-09`
+- `GRD-02`, `GRD-03`, `GRD-04`, `GRD-06`, `GRD-07`
+
+### Decisions consultadas o creadas
+- `DEC-007` consultada.
+- `DEC-008` creada con estado `VIGENTE`.
+- Estado de implementación de `DEC-008`: `PENDIENTE`.
+
+### Workflow
+- `WF-03`
+- `WF-07`
+
+### Validación
+- Alcance documental limitado a `harness/DECISIONS.md` y `harness/LOG.md` → `PASS`.
+- Coherencia `DEC-008` / `DEC-007` / `GRD-07` / `TEST-GOV-ADV-01` → `PASS`.
+- Preservación de automatización y ausencia de revisión docente previa obligatoria → `PASS`.
+- Fail-safe de trazabilidad y restauración idempotente documentados → `PASS`.
+- `OPTION B` pospuesta y no descartada → `PASS`.
+- Código funcional y Google Sheets sin modificaciones → `PASS`.
+- Llamadas API → ninguna.
+
+### Harness Impact
+`DECISION`
+
+### Actualización del Harness
+- Decisions y Log.
+
+### Limitaciones / incidencias
+- `DEC-008` permanece pendiente de implementación funcional y validación `HIGH`.
+- No se creó la hoja de eventos ni se modificó el flujo de `[ALERTA_IA]`.
+- No se fijó un periodo de retención; deberá respetarse la normativa institucional aplicable.
+
+### Revisión humana
+- Requerida: `YES`
+- Resultado: `APPROVED`.
+- Observación: el profesor seleccionó `OPTION A`, aprobó la política operacional, el fail-safe, la revisión por excepción, la restauración idempotente, Moodle como canal inicial y el muestreo configurable aproximado del 5 % durante la experimentación.
+
+### Estado final
+`DONE`
